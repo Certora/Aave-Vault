@@ -20,7 +20,8 @@ contract SymbolicLendingPoolL1 {
      * @param onBehalfOf The recipient of the minted Atokens
      * @param referralCode A unique code (unused)
      **/
-    function deposit(
+
+    function supply(
         address asset,
         uint256 amount,
         address onBehalfOf,

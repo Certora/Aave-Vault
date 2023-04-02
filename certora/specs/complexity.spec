@@ -20,12 +20,15 @@ methods{
 
     // nissan Remark: not sure about the following 3 summarizations:
 
-    // called in ATokenVault.sol::625. A method of IPool.
-    supply(address,uint256,address,uint16) => NONDET;
-
     // A method of Ipool
     getReserveData(address) => NONDET;
     
+
+    // called in MetaTxHelpers.sol::27.
+    isValidSignature(bytes32, bytes) => NONDET;
+
+    // For some reason the following 2 summarizations are ignored in the constractor
+    getPool() returns address => NONDET;
     claimAllRewards(address[],address) => NONDET;
 }
 
