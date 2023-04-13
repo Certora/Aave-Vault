@@ -2,7 +2,7 @@ certoraRun src/ATokenVault.sol \
     certora/harness/SymbolicLendingPoolL1.sol \
     certora/harness/DummyERC20_aTokenUnderlying.sol \
     lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
-    --verify ATokenVault:certora/specs/complexity.spec \
+    --verify ATokenVault:certora/specs/initial.spec \
     --link ATokenVault:AAVE_POOL=SymbolicLendingPoolL1 \
            AToken:POOL=SymbolicLendingPoolL1 \
            ATokenVault:ATOKEN=AToken \
@@ -15,9 +15,14 @@ certoraRun src/ATokenVault.sol \
                @aave-v3-periphery=lib/aave-v3-periphery/contracts \
                @openzeppelin=lib/openzeppelin-contracts/contracts \
     --msg "$1" \
+    --rule inv_atoken_scaled_balanceOf_leq_totalSupply \
     --send_only \
-    --rule noRevert \
-    --method "withdrawWithSig(uint256,address,address,(uint8,bytes32,bytes32,uint256))"
+
+
+    #--typecheck_only \
+
+
+    #--method "withdrawWithSig(uint256,address,address,(uint8,bytes32,bytes32,uint256))"
 
 
 #wrapped-atoken-vault complexity checks
