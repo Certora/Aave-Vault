@@ -1,0 +1,30 @@
+diff -ruN lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol
+--- lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol	2023-04-13 10:02:47.000000000 +0100
++++ lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol	2023-04-11 14:54:24.000000000 +0100
+@@ -71,16 +71,16 @@
+ 
+     _domainSeparator = _calculateDomainSeparator();
+ 
+-    emit Initialized(
+-      underlyingAsset,
+-      address(POOL),
+-      treasury,
+-      address(incentivesController),
+-      aTokenDecimals,
+-      aTokenName,
+-      aTokenSymbol,
+-      params
+-    );
++    // emit Initialized(
++    //   underlyingAsset,
++    //   address(POOL),
++    //   treasury,
++    //   address(incentivesController),
++    //   aTokenDecimals,
++    //   aTokenName,
++    //   aTokenSymbol,
++    //   params
++    // );
+   }
+ 
+   /// @inheritdoc IAToken
