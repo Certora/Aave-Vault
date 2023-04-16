@@ -16,4 +16,8 @@ contract ATokenVaultHarness is ATokenVault {
 function accrueYield() external {
     _accrueYield();
 }
+
+function getAccumulatedFees() external returns(uint128){
+    return s.accumulatedFees;
+}
 }

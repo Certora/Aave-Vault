@@ -1,77 +1,17 @@
-import "erc20.spec"
-
-using AToken as _AToken
-using SymbolicLendingPoolL1 as _SymbolicLendingPoolL1
-
-methods{
-    
-    getLastUpdated() returns (uint256) envfree
-    accrueYield()
-    // _accrueYield() => ay()
-    totalSupply() returns uint256 envfree
-    balanceOf(address) returns (uint256) envfree
-
-    _AToken.totalSupply() returns uint256 envfree
-    _AToken.balanceOf(address) returns (uint256) envfree
-    _AToken.scaledTotalSupply() returns (uint256) envfree
-    _AToken.scaledBalanceOf(address) returns (uint256) envfree
-    _AToken.transferFrom(address,address,uint256) returns (bool)
-
-
-    // //*********************  AToken.sol ********************************
-    // // The following was copied from StaticATokenLM spec file
-    // //*****************************************************************
-    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-    burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-    getIncentivesController() returns (address) => CONSTANT
-    UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT
-
-
-    // called by AToken.sol::224. A method of IPool.
-    finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET
-
-    // called from: IncentivizedERC20.sol::207. A method of incentivesControllerLocal.
-    handleAction(address,uint256,uint256) => DISPATCHER(true)
-
-    // getPool() returns address => ALWAYS(100);
-    getPool() returns address => NONDET;
-    
-    // // nissan Remark: not sure about the following 3 summarizations:
-
-    // A method of Ipool
-    // can this contract change the pool
-    getReserveData(address) => CONSTANT;
-    
-    claimAllRewards(address[],address) => NONDET;
-
-    // called in MetaTxHelpers.sol::27.
-    isValidSignature(bytes32, bytes) => NONDET;
-}
-
-
-ghost sumAllBalance() returns mathint {
-    init_state axiom sumAllBalance() == 0;
-}
-
-hook Sstore _balances[KEY address a] uint256 balance (uint256 old_balance) STORAGE {
-  havoc sumAllBalance assuming sumAllBalance@new() == sumAllBalance@old() + balance - old_balance;
-}
-
-hook Sload uint256 balance _balances[KEY address a] STORAGE {
-    require balance <= sumAllBalance();
-}
-
-// *********** CVL functions ************* //
-
-// Empty CVL function to bypass the _accrueYield function
-function ay(){
-    uint40 sum = 1;
-}
+import "methods_base.spec"
 
 // *********** RULES *************** //
-// view function filter
+
+// Solvency check
+// STATUS: PENDING
+invariant totalAssetsGESumOfBalances(env e)
+    sumAllBalance() <= totalAssets(e)
+
+
+// STATUS: PENDING
 rule changeInContractBalanceShouldCauseAccrual(env e, method f){
     uint256 _contractATokenBal = _AToken.balanceOf(currentContract);
+    uint256 _contractULBal = Underlying.balanceOf(currentContract);
     uint256 _lastUpdated = getLastUpdated();
     require _lastUpdated + e.block.timestamp <= 0xffffffffff;
     
@@ -79,9 +19,17 @@ rule changeInContractBalanceShouldCauseAccrual(env e, method f){
     f(e, args);
 
     uint256 lastUpdated_ = getLastUpdated();
+    uint128 lastVaultBalance_ = getLastVaultBalance();
     uint256 contractATokenBal_ = _AToken.balanceOf(currentContract);
-    assert contractATokenBal_ != _contractATokenBal => lastUpdated_ == e.block.timestamp,"contract balance change should trigger yield accrual and hence update lastUpdated";
+    uint256 contractULBal_ = Underlying.balanceOf(currentContract);
+    assert (contractATokenBal_ != _contractATokenBal || _contractULBal != contractULBal_) => 
+            lastVaultBalance_ == _contractATokenBal,
+            "contract balance change should trigger yield accrual and therefore update the lastVaultBalance to the AToken balance of the contract before the Atoken balance changes ";
 }
+
+
+// Rule to check that when lastUpdated changes, it can only change to the block.timestamp and the 
+// If this property doesn't hold, it would mean that the 
 
 
 // Checking that only _accrueYield function can change lastUpdated. rule run with the _accrueYield function summarized as an empty CVL function. 
@@ -109,10 +57,34 @@ rule accrueYieldUpdatesLastUpdated(env e){
     assert lastUpdated_ == e.block.timestamp,"accrueYield should update the lastUpdated value to current timestamp";
 }
 
+// deposit flow check rule
+rule depositCheck(){
+    uint256 assets;
+    address receiver;
+    env e;
+    deposit(e, assets, receiver);
+    assert false;
+}
 
+rule whoChangedLastUpdated(method f, env e)
+filtered{f -> !f.isView}
+{
 
-invariant totalAssetsGESumOfBalances(env e)
-    sumAllBalance() <= totalAssets(e)
+    uint256 _lastUpdated = getLastUpdated();
+    calldataarg args;
+    
+    f(e, args);
+    
+    uint256 lastUpdated_ = getLastUpdated();
+    assert lastUpdated_ == _lastUpdated;
+
+}
+
+// accumulated fee should be less than contract reserves
+// STATUS: PENDING
+invariant accumulatedFeeLeTotalFee()
+    getAccumulatedFees <= _AToken.balanceOf(currentContract)
+
 
 // invariant sumAllBalance_eq_totalSupply()
 //     sumAllBalance() == totalSupply()

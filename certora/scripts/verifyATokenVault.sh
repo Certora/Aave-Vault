@@ -11,7 +11,6 @@ fi
 certoraRun certora/harness/ATokenVaultHarness.sol \
     certora/harness/pool/SymbolicLendingPoolL1.sol \
     certora/harness/tokens/DummyERC20_aTokenUnderlying.sol \
-    certora/harness/RewardsControllerHarness.sol \
     certora/munged/lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
     --verify ATokenVaultHarness:certora/specs/ATokenVault.spec \
     --link ATokenVaultHarness:AAVE_POOL=SymbolicLendingPoolL1 \
