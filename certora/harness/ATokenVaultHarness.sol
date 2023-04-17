@@ -18,6 +18,6 @@ function accrueYield() external {
 }
 
 function getAccumulatedFees() external returns(uint128){
-    return s.accumulatedFees;
+    return _s.accumulatedFees;
 }
 }

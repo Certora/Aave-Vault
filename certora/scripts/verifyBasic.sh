@@ -1,11 +1,11 @@
-certoraRun src/ATokenVault.sol \
+certoraRun certora/harness/ATokenVaultHarness.sol \
     certora/harness/pool/SymbolicLendingPoolL1.sol \
     certora/harness/tokens/DummyERC20_aTokenUnderlying.sol \
-    lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
-    --verify ATokenVault:certora/specs/basic.spec \
-    --link ATokenVault:AAVE_POOL=SymbolicLendingPoolL1 \
-           ATokenVault:ATOKEN=AToken \
-           ATokenVault:UNDERLYING=DummyERC20_aTokenUnderlying \
+    certora/munged/lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
+    --verify ATokenVaultHarness:certora/specs/basic.spec \
+    --link ATokenVaultHarness:AAVE_POOL=SymbolicLendingPoolL1 \
+           ATokenVaultHarness:ATOKEN=AToken \
+           ATokenVaultHarness:UNDERLYING=DummyERC20_aTokenUnderlying \
            AToken:POOL=SymbolicLendingPoolL1 \
            SymbolicLendingPoolL1:underlyingToken=DummyERC20_aTokenUnderlying \
            SymbolicLendingPoolL1:aToken=AToken \
@@ -13,10 +13,11 @@ certoraRun src/ATokenVault.sol \
     --solc solc8.10 \
     --optimistic_loop \
     --staging pre_cvl2 \
-    --packages @openzeppelin-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts \
-               @aave-v3-core=lib/aave-v3-core/contracts \
-               @aave-v3-periphery=lib/aave-v3-periphery/contracts \
-               @openzeppelin=lib/openzeppelin-contracts/contracts \
+    --packages @openzeppelin-upgradeable=certora/munged/lib/openzeppelin-contracts-upgradeable/contracts \
+               @aave-v3-core=certora/munged/lib/aave-v3-core/contracts \
+               @aave-v3-periphery=certora/munged/lib/aave-v3-periphery/contracts \
+               @openzeppelin=certora/munged/lib/openzeppelin-contracts/contracts \
+               @aave/core-v3=certora/munged/lib/aave-v3-core \
     --msg "$1" \
     --settings  -t=1400,-mediumTimeout=800,-depth=15    \
     --send_only \
