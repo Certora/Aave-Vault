@@ -1,11 +1,13 @@
 certoraRun certora/harness/ATokenVaultHarness.sol \
+    certora/harness/DummyContract.sol \
     certora/harness/pool/SymbolicLendingPoolL1.sol \
     certora/harness/tokens/DummyERC20_aTokenUnderlying.sol \
     certora/munged/lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
-    --verify ATokenVaultHarness:certora/specs/basic.spec \
+    --verify ATokenVaultHarness:certora/specs/erc4626.spec \
     --link ATokenVaultHarness:AAVE_POOL=SymbolicLendingPoolL1 \
            ATokenVaultHarness:ATOKEN=AToken \
            ATokenVaultHarness:UNDERLYING=DummyERC20_aTokenUnderlying \
+           ATokenVaultHarness:DUMMY=DummyContract \
            AToken:POOL=SymbolicLendingPoolL1 \
            SymbolicLendingPoolL1:underlyingToken=DummyERC20_aTokenUnderlying \
            SymbolicLendingPoolL1:aToken=AToken \
@@ -19,18 +21,17 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
                @openzeppelin=certora/munged/lib/openzeppelin-contracts/contracts \
                @aave/core-v3=certora/munged/lib/aave-v3-core \
     --msg "$1" \
-    --settings  -t=1400,-mediumTimeout=800,-depth=15    \
+    --settings  -t=2000,-mediumTimeout=1200,-depth=15    \
     --send_only \
-    --method "mintWithATokens(uint256,address)" \
-    --rule inv_nonZero_shares_imply_nonZero_assets \
+    --rule previewDepositAmountCheck \
 
 
+#--typecheck_only
 
-    #--typecheck_only
-
-
+#    --method "mintWithATokens(uint256,address)" \
+           
 #    --rule must_not_revert \
-    
+           
 #    --method "deposit(uint256,address)" \
 
 

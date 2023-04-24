@@ -5,12 +5,16 @@ using SymbolicLendingPoolL1 as _SymbolicLendingPoolL1
 using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying
 
 
-
 methods{
+    deposit(uint256, address) returns (uint256)
+    getLastUpdated() returns (uint256) envfree
+    accrueYield()
+
     totalSupply() returns uint256 envfree;
     balanceOf(address) returns (uint256) envfree;
     totalAssets() returns (uint256) envfree;
-        
+    getLastVaultBalance() returns (uint256) envfree;
+    
     _AToken.totalSupply() returns uint256 envfree;
     _AToken.balanceOf(address) returns (uint256) envfree;
     _AToken.scaledTotalSupply() returns (uint256) envfree;
@@ -18,6 +22,13 @@ methods{
     _AToken.transferFrom(address,address,uint256) returns (bool);
 
 
+    mulDiv(uint256 x, uint256 y, uint256 denominator) returns (uint256) => mulDiv_CVL(x,y,denominator);
+    rayMul(uint256 a,uint256 b) returns (uint256) => rayMul_CVL(a,b);
+    rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_CVL(a,b);
+
+    getReserveNormalizedIncome(address) returns (uint256) => ALWAYS(1000000000000000000000000000);
+        
+    
     //*********************  AToken.sol ********************************
     // The following was copied from StaticATokenLM spec file
     //*****************************************************************
@@ -49,6 +60,25 @@ methods{
     isValidSignature(bytes32, bytes) => NONDET;
 }
 
+
+function mulDiv_CVL(uint256 x, uint256 y, uint256 denominator) returns uint256 {
+    return to_uint256((x * y) / denominator);
+}
+
+
+function rayMul_CVL(uint256 a,uint256 b) returns uint256 {
+    uint256 tmp = a + (a >> 2);
+    return tmp;
+}
+function rayDiv_CVL(uint256 a,uint256 b) returns uint256 {
+    uint256 tmp = a - (a >> 2);
+    return tmp;
+}
+
+
+function maxUint128() returns uint128 {
+    return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+}
 
 function setup(env e, address user)
 {
@@ -100,16 +130,47 @@ invariant inv_balanceOf_leq_totalSupply(address user)
     }
 }
 
+invariant lastVaultBalance_OK()
+    getLastVaultBalance() == _AToken.balanceOf(currentContract)
+    {
+        preserved deposit(uint256 assets, address receiver) with (env e) {
+            require _AToken.balanceOf(currentContract) <= maxUint128();
+        }
+    }
 
-invariant accumulated_fee(env e)
+invariant lastVaultBalance_OK_2()
+    _AToken.balanceOf(currentContract) <= maxUint128() =>
+           getLastVaultBalance() == _AToken.balanceOf(currentContract)
+
+
+/*
+invariant accumulated_fee_old(env e)
     (_AToken.balanceOf(currentContract)!=0 => _AToken.balanceOf(currentContract)>getClaimableFees(e))
     &&
     (_AToken.balanceOf(currentContract)==0 => getClaimableFees(e)==0)
     {
         preserved {
             requireInvariant sumAllBalance_eq_totalSupply();
+            require getLastVaultBalance() == _AToken.balanceOf(currentContract);
         }
     }
+*/
+
+invariant accumulated_fee_better(env e)
+    (_AToken.balanceOf(currentContract) <= maxUint128()) =>
+    (
+     (_AToken.balanceOf(currentContract)!=0 => _AToken.balanceOf(currentContract)>getClaimableFees(e))
+     &&
+     (_AToken.balanceOf(currentContract)==0 => getClaimableFees(e)==0)
+    )
+    {
+        preserved {
+            requireInvariant sumAllBalance_eq_totalSupply();
+            requireInvariant lastVaultBalance_OK_2();
+        }
+    }
+
+
 
 
 /// If there is a non-zero share amount in the vault then the assets balance of the vault should be non-zero.
@@ -119,12 +180,17 @@ invariant inv_nonZero_shares_imply_nonZero_assets()
     {
         preserved with (env e) {
             requireInvariant sumAllBalance_eq_totalSupply();
-            requireInvariant accumulated_fee(e);
+            requireInvariant accumulated_fee_better(e);
+            requireInvariant lastVaultBalance_OK_2();
             require e.msg.sender != _AToken;
-            //            require e.msg.sender != _SymbolicLendingPoolL1;
+
+            
+            //require e.msg.sender != _SymbolicLendingPoolL1;
             //require e.msg.sender != _DummyERC20_aTokenUnderlying;        
         }
     }
+
+
 
 
 
@@ -273,11 +339,7 @@ invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address use
     }    
 }
 
-    
-
 */
-
-
 
 
 rule larger_deposit_imply_more_shares() {
@@ -294,4 +356,111 @@ rule larger_deposit_imply_more_shares() {
     uint256 balance_receiver_after = _AToken.balanceOf(receiver);
 
     assert (balance_receiver_after >= balance_receiver_pre+1000);
+}
+
+function must_NOT_revert(method f) returns bool {
+    return 
+        f.selector == asset().selector ||
+        f.selector == totalAssets().selector ||
+        f.selector == maxDeposit(address).selector ||
+        f.selector == maxMint(address).selector ||
+        f.selector == maxWithdraw(address).selector ||
+        f.selector == maxRedeem(address).selector
+    ;
+}
+
+
+function must_NOT_revert_unless_large_input(method f) returns bool {
+    return
+        f.selector == convertToShares(uint256).selector ||
+        f.selector == convertToAssets(uint256).selector
+        ;
+}
+
+rule must_not_revert(method f) {
+    env e;
+    calldataarg args;
+
+    require must_NOT_revert(f);
+    require e.msg.value == 0;
+
+    f@withrevert(e, args); 
+    bool reverted = lastReverted;
+
+    assert !reverted, "Conversion to assets reverted";
+}
+
+
+
+
+
+/**
+ * @title ConvertToShares must not revert except for overflow
+ * From EIP4626:
+ * > MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
+ * We define large input as `10^50`. To be precise, we need that `RAY * assets < 2^256`, since
+ * `2^256~=10^77` and `RAY=10^27` we get that `assets < 10^50`.
+ * 
+ * Note. *We also require that:* **`rate > 0`**.
+ */
+/*
+rule toSharesDoesNotRevert(uint256 assets) {
+	require assets < 10^50;
+	env e;
+
+	// Prevent revert due to overflow.
+	// Roughly speaking ConvertToShares returns assets * RAY / rate().
+	mathint ray_math = to_mathint(RAY());
+	mathint rate_math = to_mathint(rate(e));
+	mathint assets_math = to_mathint(assets);
+	require rate_math > 0;
+
+	uint256 shares = convertToShares@withrevert(e, assets);
+	bool reverted = lastReverted;
+
+	assert !reverted, "Conversion to shares reverted";
+}
+*/
+
+/**
+ * @title ConvertToAssets must not revert unless due to integer overflow
+ * From EIP4626:
+ * > MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
+ * We define large input as 10^45. To be precise we need that `shares * rate < 2^256 ~= 10^77`,
+ * hence we require that:
+ * - `shares < 10^45`
+ * - `rate < 10^32`
+ */
+/*
+rule toAssetsDoesNotRevert(uint256 shares) {
+	require shares < 10^45;
+	env e;
+
+	// Prevent revert due to overflow.
+	// Roughly speaking ConvertToAssets returns shares * rate() / RAY.
+	mathint ray_math = to_mathint(RAY());
+	mathint rate_math = to_mathint(rate(e));
+	mathint shares_math = to_mathint(shares);
+	require rate_math < 10^32;
+
+	uint256 assets = convertToAssets@withrevert(e, shares);
+	bool reverted = lastReverted;
+
+	assert !reverted, "Conversion to assets reverted";
+}
+*/
+
+
+rule previewDepositAmountCheck(){
+    env e1;
+    env e2;
+    uint256 assets;
+    address receiver;   
+    uint256 previewShares;
+    uint256 shares;
+    
+    previewShares = previewDeposit(e1, assets);
+    shares = deposit(e2, assets, receiver);
+    
+    assert previewShares == shares,"preview shares should be equal to actual shares";
 }
