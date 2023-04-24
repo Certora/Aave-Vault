@@ -14,7 +14,7 @@ import {DummyContract} from "./DummyContract.sol";
 contract ATokenVaultHarness is ATokenVault {
     DummyContract DUMMY;
     
-    constructor(address underlying, uint16 referralCode, IPoolAddressesProvider poolAddressesProvider) ATokenVault(underlying, referralCode, poolAddressesProvider){
+    constructor(address underlying, uint16 referralCode, IPoolAddressesProvider poolAddressesProvider) ATokenVault(underlying, referralCode, poolAddressesProvider) {
     }
     
     function havoc_all() public {
