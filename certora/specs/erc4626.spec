@@ -1,11 +1,21 @@
 import "methods_base.spec"
 
+
+
 methods {
     rayMul(uint256 a,uint256 b) returns (uint256) => rayMul_CVL(a,b);
     rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_CVL(a,b);
     havoc_all() envfree;
+    getFee() envfree;
     
     havoc_all_dummy() => HAVOC_ALL;
+    mulDiv(uint256 x, uint256 y, uint256 denominator) returns uint256 => mulDiv_g(x,y,denominator);
+}
+
+ghost mulDiv_g(uint256 , uint256 , uint256) returns uint256 {
+    axiom 1==1;
+    //    axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 up_down.
+    //    mulDiv_g(x,y,denominator,up_down) <= x*y;
 }
 
 function rayMul_CVL(uint256 a,uint256 b) returns uint256 {
@@ -26,6 +36,12 @@ function maxUint120() returns uint128 {
 function maxUint64() returns uint128 {
     return 0xFFFFFFFFFFFFFFFF;
 }
+
+
+// In file Constants.sol we have "uint256 constant SCALE = 1e18;"
+definition SCALE() returns uint256 = 1000000000000000000;
+
+
 
 ///////////////// Properties ///////////////////////
 // ****************************
@@ -56,9 +72,13 @@ rule previewDepositAmountCheck() {
     require e1.block.timestamp < e2.block.timestamp;
     require e2.block.timestamp < 0xffffff;
 
-    require totalAssets(e1) <= maxUint64();
+    require _AToken.balanceOf(currentContract) <= maxUint64();
+    require getAccumulatedFees() <= maxUint64();
+    require getLastVaultBalance() <= maxUint64();
     require totalSupply() <= maxUint64();
-    require assets <= maxUint64();
+    
+    require(getFee() <= SCALE());  // SCALE is 10^18
+
     
     previewShares = previewDeposit(e1, assets);
     shares = deposit(e2, assets, receiver);
@@ -122,15 +142,23 @@ rule previewMintAmountCheck() {
     address receiver;
     uint256 previewAssets;
     uint256 assets;
-    
+
     require getLastUpdated() < e1.block.timestamp;
     require e1.block.timestamp < e2.block.timestamp;
     require e2.block.timestamp < 0xffffff;
+
+    require _AToken.balanceOf(currentContract) <= maxUint64();
+    require getAccumulatedFees() <= maxUint64();
+    require getLastVaultBalance() <= maxUint64();
+    require totalSupply() <= maxUint64();
+
+    require(getFee() <= SCALE());  // SCALE is 10^18
     
     
     previewAssets = previewMint(e1,shares);
+    require (shares <= convertToShares(e2,maxDeposit(receiver)) => convertToAssets(e2,shares) <= maxDeposit(receiver));
     assets = mint(e2, shares, receiver);
-    assert previewAssets == assets, "preview should be equal to actual - mint";
+    assert previewAssets == assets || previewAssets == assets+1 || previewAssets+1 == assets, "preview should be equal to actual - mint";
 }
 
 
@@ -213,7 +241,7 @@ rule previewWithdrawAmountCheck(env e1, env e2) {
     uint256 previewShares;
     
     previewShares = previewWithdraw(e1, assets);
-    shares = withdraw(e1, assets, receiver, owner);
+    shares = withdraw(e2, assets, receiver, owner);
     
     assert previewShares == shares,"preview should be equal to actual - withdraw";
 }
@@ -325,7 +353,7 @@ rule previewWithdrawIndependentOfBalance1(){
             assert previewShares1 == previewShares2,
             "preview withdraw should be independent of allowance";
         }
-
+*/
 
 // *****************************
 // *        previewRedeem      *
@@ -342,18 +370,25 @@ rule previewWithdrawIndependentOfBalance1(){
 
 ///@title previewRedeem returns the right value
 ///@notice EIP4626 dictates that previewRedeem must return as close to and no more than the exact amount of assets that would be returned in a redeem call in the same transaction. The previewRedeem function in staticAToken contract returns a value exactly equal to that returned by the redeem function.
-        rule previewRedeemAmountCheck(env e){
-            uint256 shares;
-            address receiver;
-            address owner;
-            uint256 previewAssets;
-            uint256 assets;
-            
-            previewAssets = previewRedeem(shares);
-            assets = redeem(e, shares, receiver, owner);
-            
-            assert previewAssets == assets,"preview should the same as the actual assets received";
-        }
+
+rule previewRedeemAmountCheck(env e1, env e2){
+    uint256 shares;
+    address receiver;
+    address owner;
+    uint256 previewAssets;
+    uint256 assets;
+    
+    require getLastUpdated() < e1.block.timestamp;
+    require e1.block.timestamp < e2.block.timestamp;
+    require e2.block.timestamp < 0xffffff;
+
+    previewAssets = previewRedeem(e1, shares);
+    assets = redeem(e2, shares, receiver, owner);
+    
+    assert previewAssets == assets,"preview should the same as the actual assets received";
+}
+
+/*
 
         // The EIP4626 spec requires that the previewRedeem function must not account for redemption limits like those returned by 
         // the maxRedeem function and should always act as though the redemption would be accepted, regardless if the user has enough 

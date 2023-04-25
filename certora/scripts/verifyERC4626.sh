@@ -21,7 +21,7 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
                @openzeppelin=certora/munged/lib/openzeppelin-contracts/contracts \
                @aave/core-v3=certora/munged/lib/aave-v3-core \
     --msg "$1" \
-    --settings  -t=2000,-mediumTimeout=1200,-depth=15    \
+    --settings  -t=2000,-mediumTimeout=1000,-depth=15    \
     --send_only \
     --rule previewDepositAmountCheck \
 

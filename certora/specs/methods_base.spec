@@ -14,16 +14,17 @@ methods{
     balanceOf(address) returns (uint256) envfree
         //    totalAssets() returns (uint256) envfree;
     getLastVaultBalance() returns (uint256) envfree;
+    getAccumulatedFees() returns (uint128) envfree;
 
     _AToken.totalSupply() returns uint256 envfree
     _AToken.balanceOf(address) returns (uint256) envfree
     _AToken.scaledTotalSupply() returns (uint256) envfree
     _AToken.scaledBalanceOf(address) returns (uint256) envfree
-    _AToken.transferFrom(address,address,uint256) returns (bool)
+    _AToken.transferFrom(address,address,uint256) returns (bool);
 
 
-   mulDiv(uint256 x, uint256 y, uint256 denominator) returns (uint256) => mulDiv_CVL(x,y,denominator);
-
+    //mulDiv(uint256 x, uint256 y, uint256 denominator) returns (uint256) => mulDiv_CVL(x,y,denominator);
+        
     // //*********************  AToken.sol ********************************
     // // The following was copied from StaticATokenLM spec file
     // //*****************************************************************
@@ -85,3 +86,5 @@ function mulDiv_CVL(uint256 x, uint256 y, uint256 denominator) returns uint256 {
     require denominator != 0;
     return f; 
 }
+
+
