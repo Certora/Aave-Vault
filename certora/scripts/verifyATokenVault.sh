@@ -16,7 +16,6 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
     --link ATokenVaultHarness:AAVE_POOL=SymbolicLendingPoolL1 \
             ATokenVaultHarness:ATOKEN=AToken \
             ATokenVaultHarness:UNDERLYING=DummyERC20_aTokenUnderlying \
-            AToken:POOL=SymbolicLendingPoolL1 \
             SymbolicLendingPoolL1:underlyingToken=DummyERC20_aTokenUnderlying \
             SymbolicLendingPoolL1:aToken=AToken \
             AToken:POOL=SymbolicLendingPoolL1 \

@@ -1,56 +1,42 @@
-import "erc20.spec"
+import "erc20.spec";
 
-using AToken as _AToken
-using SymbolicLendingPoolL1 as _SymbolicLendingPoolL1
-using DummyERC20_aTokenUnderlying as _DummyERC20_aTokenUnderlying
-
+using AToken as _AToken;
+using SymbolicLendingPoolL1 as _SymbolicLendingPoolL1;
 
 methods{
-    deposit(uint256, address) returns (uint256)
-    getLastUpdated() returns (uint256) envfree
-    accrueYield()
+    function totalSupply() returns uint256 envfree;
+    function balanceOf(address) returns (uint256) envfree;
 
-    totalSupply() returns uint256 envfree;
-    balanceOf(address) returns (uint256) envfree;
-    totalAssets() returns (uint256) envfree;
-    getLastVaultBalance() returns (uint256) envfree;
-    
-    _AToken.totalSupply() returns uint256 envfree;
-    _AToken.balanceOf(address) returns (uint256) envfree;
-    _AToken.scaledTotalSupply() returns (uint256) envfree;
-    _AToken.scaledBalanceOf(address) returns (uint256) envfree;
-    _AToken.transferFrom(address,address,uint256) returns (bool);
+    function _AToken.totalSupply() returns uint256 envfree;
+    function _AToken.balanceOf(address) returns (uint256) envfree;
+    function _AToken.scaledTotalSupply() returns (uint256) envfree;
+    function _AToken.scaledBalanceOf(address) returns (uint256) envfree;
+    function _AToken.transferFrom(address,address,uint256) returns (bool);
 
 
-    mulDiv(uint256 x, uint256 y, uint256 denominator) returns (uint256) => mulDiv_CVL(x,y,denominator);
-    rayMul(uint256 a,uint256 b) returns (uint256) => rayMul_CVL(a,b);
-    rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_CVL(a,b);
-
-    getReserveNormalizedIncome(address) returns (uint256) => ALWAYS(1000000000000000000000000000);
-        
-    
     //*********************  AToken.sol ********************************
     // The following was copied from StaticATokenLM spec file
     //*****************************************************************
-    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true);
-    burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true);
-    getIncentivesController() returns (address) => CONSTANT;
-    UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT;
+    function mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true);
+    function burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true);
+    function getIncentivesController() returns (address) => CONSTANT;
+    function UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT;
 
 
     // called by AToken.sol::224. A method of IPool.
-    finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET;
+    function finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET;
 
     // called from: IncentivizedERC20.sol::207. A method of incentivesControllerLocal.
-    handleAction(address user, uint256 totalSupply, uint256 userBalance) => NONDET;
+    function handleAction(address user, uint256 totalSupply, uint256 userBalance) => NONDET;
 
 
     // getPool() returns address => ALWAYS(100);
-    getPool() returns address => NONDET;
+    function getPool() returns address => NONDET;
     
     // nissan Remark: not sure about the following 3 summarizations:
 
     // A method of Ipool
+<<<<<<< Updated upstream
     getReserveData(address) => NONDET;
     //    _SymbolicLendingPoolL1.getReserveData(address) => NONDET;
     
@@ -101,6 +87,17 @@ function setup(env e, address user)
 
 
 
+=======
+    function getReserveData(address) => NONDET;
+    //    _SymbolicLendingPoolL1.getReserveData(address) => NONDET;
+    
+    function claimAllRewards(address[],address) => NONDET;
+
+    // called in MetaTxHelpers.sol::27.
+    function isValidSignature(bytes32, bytes) => NONDET;
+}
+
+>>>>>>> Stashed changes
 /// @title Sum of balances of StaticATokenLM 
 ghost sumAllBalance() returns mathint {
     init_state axiom sumAllBalance() == 0;
@@ -125,11 +122,16 @@ invariant sumAllBalance_eq_totalSupply()
 invariant inv_balanceOf_leq_totalSupply(address user)
     balanceOf(user) <= totalSupply()
 {
+<<<<<<< Updated upstream
     preserved with (env e) {
+=======
+    preserved {
+>>>>>>> Stashed changes
         requireInvariant sumAllBalance_eq_totalSupply();
     }
 }
 
+<<<<<<< Updated upstream
 invariant lastVaultBalance_OK()
     getLastVaultBalance() == _AToken.balanceOf(currentContract)
     {
@@ -278,6 +280,8 @@ rule aTokenBalanceIsFixed(method f) {
 
 
 
+=======
+>>>>>>> Stashed changes
 
 ghost sumAllATokenScaledBalance() returns mathint {
     init_state axiom sumAllATokenScaledBalance() == 0;
@@ -289,7 +293,11 @@ hook Sstore _AToken._userState[KEY address a] .(offset 0) uint128 balance (uint1
 
 hook Sload uint128 balance _AToken._userState[KEY address a] .(offset 0) STORAGE {
     require balance <= sumAllATokenScaledBalance();
+<<<<<<< Updated upstream
 }
+=======
+} 
+>>>>>>> Stashed changes
 
 /// @title Sum of AToken scaled balances = AToken scaled totalSupply()
 invariant sumAllATokenScaledBalance_eq_totalSupply()
@@ -339,6 +347,7 @@ invariant inv_atoken_balanceOf_2users_leq_totalSupply(address user1, address use
     }    
 }
 
+<<<<<<< Updated upstream
 */
 
 
@@ -464,3 +473,7 @@ rule previewDepositAmountCheck(){
     
     assert previewShares == shares,"preview shares should be equal to actual shares";
 }
+=======
+    
+
+>>>>>>> Stashed changes
