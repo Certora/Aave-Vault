@@ -39,7 +39,7 @@ filtered { f -> !harnessOnlyMethods(f) && !f.isView }
     uint256 contractATokenBal_ = _AToken.balanceOf(currentContract);
     uint256 contractULBal_ = Underlying.balanceOf(currentContract);
     assert (contractATokenBal_ != _contractATokenBal || _contractULBal != contractULBal_) && 
-            (f.selector != withdrawFees(address, uint256).selector || 
+            (f.selector != withdrawFees(address, uint256).selector && 
             f.selector != emergencyRescue(address, address, uint256).selector) => 
             accrueYieldCalled == true,
             "contract balance change should trigger yield accrual";
