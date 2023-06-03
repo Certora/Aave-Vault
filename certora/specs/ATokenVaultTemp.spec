@@ -1,10 +1,10 @@
-import "methods_base.spec"
+import "methods_base.spec";
 
 
 methods{
-    mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns (uint256) envfree => mulDiv_g(x,y,denominator,rounding);
-    rayMul(uint256 x, uint256 y) returns (uint256) envfree => rayMul_g(x,y);
-    rayDiv(uint256 x, uint256 y) returns (uint256) envfree => rayDiv_g(x,y);
+    function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns (uint256) envfree => mulDiv_g(x,y,denominator,rounding);
+    function _.rayMul(uint256 x, uint256 y) returns (uint256) envfree => rayMul_g(x,y);
+    function _.rayDiv(uint256 x, uint256 y) returns (uint256) envfree => rayDiv_g(x,y);
 }
 
 ghost rayMul_g(uint256, uint256) returns uint256{
@@ -36,8 +36,8 @@ ghost rayDiv_g(uint256, uint256) returns uint256{
 // STATUS: PENDING
 invariant nonZeroSupplyNonZeroAssets(env e1)
     totalSupply() != 0 => totalAssets(e1) != 0
-    filtered {f -> f.selector == deposit(uint256,address).selector}
-    // filtered {f -> f.selector == depositATokens(uint256,address).selector}
+    filtered {f -> f.selector == sig:deposit(uint256,address).selector}
+    // filtered {f -> f.selector == sig:depositATokens(uint256,address).selector}
     // filtered { f -> !harnessOnlyMethods(f) && !f.isView }
     { preserved with (env e2) { require e1.msg.sender == e2.msg.sender;
                                 require e2.msg.sender != currentContract;
@@ -98,14 +98,14 @@ invariant totalAssetsGESumOfBalances(env e)
 // invariant to check that the totalSupply is less than or equal to totalAssets.
 invariant supplyLETotalAssets(env e)
     totalSupply() <= totalAssets(e)
-    // filtered {f -> f.selector == deposit(uint256, address).selector}
+    // filtered {f -> f.selector == sig:deposit(uint256, address).selector}
     filtered { f -> !harnessOnlyMethods(f) && !f.isView }
 
 // invariant to check that if there is a non-zero supply of shares, then there should be some assets to back those shares
 // STATUS: PENDING
 invariant nonZeroSharesNonZeroAssets(env e)
     sumAllBalance() != 0 => totalAssets(e) != 0
-    // filtered {f -> f.selector == redeem(uint256,address,address).selector}
+    // filtered {f -> f.selector == sig:redeem(uint256,address,address).selector}
     filtered { f -> !harnessOnlyMethods(f) && !f.isView }
     { preserved { requireInvariant totalSupplyESumAllBalance(); } }
 
@@ -137,7 +137,7 @@ invariant totalSupplyGeUserBalance(address user)
 
 // 
 rule noFrontRunningInRedemption(method f)
-    // filtered {f -> f.selector == redeem(uint256,address,address).selector}
+    // filtered {f -> f.selector == sig:redeem(uint256,address,address).selector}
     filtered { f -> !harnessOnlyMethods(f) && !f.isView }
 {
     uint256 shares;
