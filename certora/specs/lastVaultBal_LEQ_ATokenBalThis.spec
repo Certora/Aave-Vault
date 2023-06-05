@@ -8,8 +8,10 @@ methods {
     //    function _.rayMul(uint256 a,uint256 b) returns (uint256) => rayMul_g(a,b);
     //function _.rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_g(a,b);
     //function _.mulDiv(uint256 x, uint256 y, uint256 denominator) returns uint256 => mulDiv3_g(x,y,denominator);
-    function _.rayMul(uint256 a,uint256 b) internal => rayMul_g(a,b) expect uint256 ALL;
-    function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_g(a,b) expect uint256 ALL;
+    //    function _.rayMul(uint256 a,uint256 b) internal => rayMul_g(a,b) expect uint256 ALL;
+    //function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_g(a,b) expect uint256 ALL;
+    function _.rayMul(uint256 a,uint256 b) internal => rayMul_g_MI(a,b) expect uint256 ALL;
+    function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_g_MI(a,b) expect uint256 ALL;
     function _.mulDiv(uint256 x, uint256 y, uint256 denominator) internal => mulDiv3_g(x,y,denominator)  expect uint256 ALL;
 
 }
@@ -31,6 +33,21 @@ ghost rayDiv_g(uint256 , uint256) returns uint256 {
     axiom forall uint256 x. forall uint256 y.
         (
          x/2 <= to_mathint(rayDiv_g(x,y)) && rayDiv_g(x,y) <= x
+        );
+}
+
+ghost rayMul_g_MI(mathint , mathint) returns uint256 {
+    axiom forall mathint x. forall mathint y.
+        (
+         ((x==0||y==0) => rayMul_g_MI(x,y)==0)
+         &&
+         x <= to_mathint(rayMul_g_MI(x,y)) && to_mathint(rayMul_g_MI(x,y)) <= 2*x
+        );
+}
+ghost rayDiv_g_MI(mathint , mathint) returns uint256 {
+    axiom forall mathint x. forall mathint y.
+        (
+         x/2 <= to_mathint(rayDiv_g_MI(x,y)) && to_mathint(rayDiv_g_MI(x,y)) <= x
         );
 }
 
@@ -82,12 +99,17 @@ invariant inv_lastVaultBalance_LEQ_ATokenBalThis()
         //require (forall uint256 x. forall uint256 ind. forall uint256 z.
         //       rayMul_g(to_uint256(rayDiv_g(x,ind)+z),ind) == to_uint256(x+rayMul_g(z,ind))
         //      );
-        require (forall uint256 x. forall uint256 ind. forall uint256 z.
-                 forall uint256 temp1. forall uint256 temp2.
-                 to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
-                 =>
-                 rayMul_g(temp1,ind) == temp2
-                );
+
+        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
+        //         forall uint256 temp1. forall uint256 temp2.
+        //         to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
+        //         =>
+        //         rayMul_g(temp1,ind) == temp2
+        //       );
+
+        require (forall mathint x. forall mathint ind. forall mathint z.
+                 to_mathint(rayMul_g_MI((rayDiv_g_MI(x,ind)+z),ind)) == x+rayMul_g_MI(z,ind)
+              );
     }
     
     preserved withdrawFees(address to, uint256 amount) with (env e) {
@@ -105,13 +127,16 @@ invariant inv_lastVaultBalance_LEQ_ATokenBalThis()
         //require (forall uint256 x. forall uint256 ind. forall uint256 z.
         //       rayMul_g(to_uint256(rayDiv_g(x,ind)+z),ind) == to_uint256(x+rayMul_g(z,ind))
         //      );
-        require (forall uint256 x. forall uint256 ind. forall uint256 z.
-                 forall uint256 temp1. forall uint256 temp2.
-                 to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
-                 =>
-                 rayMul_g(temp1,ind) == temp2
-                );
+        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
+        //       forall uint256 temp1. forall uint256 temp2.
+        //       to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
+        //       =>
+        //       rayMul_g(temp1,ind) == temp2
+        //      );
 
+        require (forall mathint x. forall mathint ind. forall mathint z.
+                 to_mathint(rayMul_g_MI((rayDiv_g_MI(x,ind)+z),ind)) == x+rayMul_g_MI(z,ind)
+              );
         require to != currentContract;
     }
 
@@ -130,13 +155,16 @@ invariant inv_lastVaultBalance_LEQ_ATokenBalThis()
         //require (forall uint256 x. forall uint256 ind. forall uint256 z.
         //         rayMul_g(to_uint256(rayDiv_g(x,ind)+z),ind) == to_uint256(x+rayMul_g(z,ind))
         //        );
-        require (forall uint256 x. forall uint256 ind. forall uint256 z.
-                 forall uint256 temp1. forall uint256 temp2.
-                 to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
-                 =>
-                 rayMul_g(temp1,ind) == temp2
-                );
+        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
+        //       forall uint256 temp1. forall uint256 temp2.
+        //       to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
+        //       =>
+        //       rayMul_g(temp1,ind) == temp2
+        //      );
 
+        require (forall mathint x. forall mathint ind. forall mathint z.
+                 to_mathint(rayMul_g_MI((rayDiv_g_MI(x,ind)+z),ind)) == x+rayMul_g_MI(z,ind)
+              );
 
         require depositor != currentContract;
     }
@@ -156,13 +184,16 @@ invariant inv_lastVaultBalance_LEQ_ATokenBalThis()
         //require (forall uint256 x. forall uint256 ind. forall uint256 z.
         //         rayMul_g(to_uint256(rayDiv_g(x,ind)+z),ind) == to_uint256(x+rayMul_g(z,ind))
         //        );
-        require (forall uint256 x. forall uint256 ind. forall uint256 z.
-                 forall uint256 temp1. forall uint256 temp2.
-                 to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
-                 =>
-                 rayMul_g(temp1,ind) == temp2
-                );
+        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
+        //       forall uint256 temp1. forall uint256 temp2.
+        //       to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
+        //       =>
+        //       rayMul_g(temp1,ind) == temp2
+        //      );
 
+        require (forall mathint x. forall mathint ind. forall mathint z.
+                 to_mathint(rayMul_g_MI((rayDiv_g_MI(x,ind)+z),ind)) == x+rayMul_g_MI(z,ind)
+              );
 
         require depositor != currentContract;
     }
