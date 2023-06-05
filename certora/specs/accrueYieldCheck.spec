@@ -1,10 +1,14 @@
-import "methods_base.spec"
+import "methods_base.spec";
 
 
 methods{
-    mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns (uint256) envfree => mulDiv_g(x,y,denominator,rounding);
-    rayMul(uint256 x, uint256 y) returns (uint256) envfree => rayMul_g(x,y);
-    rayDiv(uint256 x, uint256 y) returns (uint256) envfree => rayDiv_g(x,y);
+    //function _.rayMul(uint256 x, uint256 y) returns (uint256) envfree => rayMul_g(x,y);
+    //function _.rayDiv(uint256 x, uint256 y) returns (uint256) envfree => rayDiv_g(x,y);
+    //function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns (uint256) envfree => mulDiv_g(x,y,denominator,rounding);
+
+    function _.rayMul(uint256 a,uint256 b) internal => rayMul_g(a,b) expect uint256 ALL;
+    function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_g(a,b) expect uint256 ALL;
+    function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) internal => mulDiv_g(x,y,denominator,rounding)  expect uint256 ALL;
 }
 
 ghost rayMul_g(uint256, uint256) returns uint256{
@@ -16,6 +20,25 @@ ghost rayDiv_g(uint256, uint256) returns uint256{
     axiom forall uint256 x. forall uint256 y. rayDiv_g(x,y)*y<= x*RAY() + y/2;
     axiom forall uint256 x. forall uint256 y. x*RAY() - y/2 < rayDiv_g(x,y)*y;
 }
+
+// axiom f * deno < x*y
+// axioms for requirement in CVL function
+
+ghost mulDiv_g(uint256, uint256, uint256, uint8) returns uint256 {
+    axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 rounding.
+    rounding == 0 => mulDiv_g(x, y, denominator, rounding)*denominator <= x*y;
+    
+    axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 rounding.
+    rounding == 1 => mulDiv_g(x, y, denominator, rounding)*denominator <= x*y+denominator;
+    
+    axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 rounding. 
+    rounding == 0 => x*y < mulDiv_g(x,y,denominator, rounding)*denominator + denominator;
+    
+    axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 rounding.
+    rounding == 1 => x*y < mulDiv_g(x,y,denominator, rounding)*denominator;
+}
+
+
 
 
 // Rule to check the _accrueYield function

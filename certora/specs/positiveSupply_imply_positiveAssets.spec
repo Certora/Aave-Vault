@@ -1,17 +1,17 @@
-import "methods_base.spec"
-using ATokenVaultHarness as _ATokenVaultHarness
+import "methods_base.spec";
+using ATokenVaultHarness as _ATokenVaultHarness;
 
 methods {
-    Underlying.totalSupply() envfree;
-    havoc_all() envfree;
-    _SymbolicLendingPoolL1.getLiquidityIndex() envfree;
+    function Underlying.totalSupply() external envfree;
+    function havoc_all() external envfree;
+    function _SymbolicLendingPoolL1.getLiquidityIndex() external envfree;
 
-    rayMul(uint256 a,uint256 b) returns (uint256) => rayMul_g(a,b);
-    rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_g(a,b);
+    function _.rayMul(uint256 a,uint256 b) returns (uint256) => rayMul_g(a,b);
+    function _.rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_g(a,b);
     
-    havoc_all_dummy() => HAVOC_ALL;
-    mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns uint256 =>
-        mulDiv4_g(x,y,denominator,rounding);
+    function _.havoc_all_dummy() => HAVOC_ALL;
+    function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns uint256 =>
+        function mulDiv4_g(x,y,denominator,rounding) external;
 }
 
 ghost mulDiv4_g(uint256 , uint256 , uint256, uint8) returns uint256 {
@@ -74,8 +74,8 @@ invariant lastVaultBalance_OK()
 /*
 invariant nonZeroSupplyNonZeroAssets(env e1)
     totalSupply() != 0 => totalAssets(e1) != 0
-    filtered {f -> f.selector == deposit(uint256,address).selector}
-// filtered {f -> f.selector == depositATokens(uint256,address).selector}
+    filtered {f -> f.selector == sig:deposit(uint256,address).selector}
+// filtered {f -> f.selector == sig:depositATokens(uint256,address).selector}
 // filtered { f -> !harnessOnlyMethods(f) && !f.isView }
     {
         preserved with (env e2) {
@@ -90,7 +90,7 @@ invariant nonZeroSupplyNonZeroAssets(env e1)
 */
 
 rule rl_nonZeroSupplyNonZeroAssets(method f, env e1, env e2, env e3) {
-    require(f.selector != havoc_all().selector);
+    require(f.selector != sig:havoc_all().selector);
 
     require getLastUpdated() <= e1.block.timestamp;
     require e1.block.timestamp <= e2.block.timestamp;

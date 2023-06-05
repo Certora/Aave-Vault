@@ -1,18 +1,18 @@
-import "methods_base.spec"
+import "methods_base.spec";
 
 
 methods {
-    Underlying.totalSupply() envfree;
-    havoc_all() envfree;
-    _SymbolicLendingPoolL1.getLiquidityIndex() envfree;
+    function Underlying.totalSupply() external envfree;
+    function havoc_all() external envfree;
+    function _SymbolicLendingPoolL1.getLiquidityIndex() external envfree;
 
-    rayMul(uint256 a,uint256 b) returns (uint256) => rayMul_g(a,b);
-    rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_g(a,b);
+    function _.rayMul(uint256 a,uint256 b) returns (uint256) => rayMul_g(a,b);
+    function _.rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_g(a,b);
     
-    havoc_all_dummy() => HAVOC_ALL;
+    function _.havoc_all_dummy() => HAVOC_ALL;
 
-    mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns uint256 =>
-        mulDiv4_g(x,y,denominator,rounding);
+    function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns uint256 =>
+        function mulDiv4_g(x,y,denominator,rounding) external;
 }
 
 ghost mulDiv4_g(uint256 , uint256 , uint256, uint8) returns uint256 {
@@ -86,7 +86,7 @@ rule rl_getClaimableFees_LEQ_ATokenBalance(method f, env e) {
     require getLastUpdated() <= e.block.timestamp;
     require e.msg.sender != currentContract;
 
-    require(f.selector != havoc_all().selector);
+    require(f.selector != sig:havoc_all().selector);
     require(f.selector != withdrawATokensWithSig(uint256,address,address,
                                                  (uint8,bytes32,bytes32,uint256)).selector);
     require(f.selector != redeemWithATokensWithSig(uint256,address,address,
@@ -95,11 +95,11 @@ rule rl_getClaimableFees_LEQ_ATokenBalance(method f, env e) {
                                           (uint8,bytes32,bytes32,uint256)).selector);
     require(f.selector != redeemWithSig(uint256,address,address,
                                         (uint8,bytes32,bytes32,uint256)).selector);
-    require(f.selector != withdrawFees(address,uint256).selector);
-    require(f.selector != redeemAsATokens(uint256,address,address).selector);
-    require(f.selector != withdraw(uint256,address,address).selector);
-    require(f.selector != withdrawATokens(uint256,address,address).selector);
-    require(f.selector != redeem(uint256,address,address).selector);
+    require(f.selector != sig:withdrawFees(address,uint256).selector);
+    require(f.selector != sig:redeemAsATokens(uint256,address,address).selector);
+    require(f.selector != sig:withdraw(uint256,address,address).selector);
+    require(f.selector != sig:withdrawATokens(uint256,address,address).selector);
+    require(f.selector != sig:redeem(uint256,address,address).selector);
 
     require getFee() <= SCALE();  // SCALE is 10^18
     require _AToken.balanceOf(currentContract) <= maxUint64();

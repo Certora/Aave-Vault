@@ -14,16 +14,18 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
            AToken:_underlyingAsset=DummyERC20_aTokenUnderlying \
     --solc solc8.10 \
     --optimistic_loop \
-    --staging pre_cvl2 \
+    --cloud \
     --packages @openzeppelin-upgradeable=certora/munged/lib/openzeppelin-contracts-upgradeable/contracts \
                @aave-v3-core=certora/munged/lib/aave-v3-core/contracts \
                @aave-v3-periphery=certora/munged/lib/aave-v3-periphery/contracts \
                @openzeppelin=certora/munged/lib/openzeppelin-contracts/contracts \
                @aave/core-v3=certora/munged/lib/aave-v3-core \
-    --msg "preview[method]_amount_check" \
+    --msg "previewMint_amount_check By Script mulDiv3 and mulDiv4 " \
     --settings  -t=2000,-mediumTimeout=1000,-depth=15    \
     --send_only \
-    --rule previewDeposit_amount_check previewMint_amount_check previewWithdraw_amount_check previewRedeem_amount_check \
+    --rule previewMint_amount_check \
+
+#        --rule previewDeposit_amount_check previewMint_amount_check previewWithdraw_amount_check previewRedeem_amount_check \
 
     #--typecheck_only
 

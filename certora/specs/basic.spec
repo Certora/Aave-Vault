@@ -4,46 +4,46 @@ using AToken as _AToken;
 using SymbolicLendingPoolL1 as _SymbolicLendingPoolL1;
 
 methods{
-    function totalSupply() returns uint256 envfree;
-    function balanceOf(address) returns (uint256) envfree;
+    function totalSupply() external returns uint256 envfree;
+    function balanceOf(address) external returns (uint256) envfree;
 
-    function _AToken.totalSupply() returns uint256 envfree;
-    function _AToken.balanceOf(address) returns (uint256) envfree;
-    function _AToken.scaledTotalSupply() returns (uint256) envfree;
-    function _AToken.scaledBalanceOf(address) returns (uint256) envfree;
-    function _AToken.transferFrom(address,address,uint256) returns (bool);
+    function _AToken.totalSupply() external returns uint256 envfree;
+    function _AToken.balanceOf(address) external returns (uint256) envfree;
+    function _AToken.scaledTotalSupply() external returns (uint256) envfree;
+    function _AToken.scaledBalanceOf(address) external returns (uint256) envfree;
+    function _AToken.transferFrom(address,address,uint256) external returns (bool);
 
 
     //*********************  AToken.sol ********************************
     // The following was copied from StaticATokenLM spec file
     //*****************************************************************
-    function mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true);
-    function burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true);
-    function getIncentivesController() returns (address) => CONSTANT;
-    function UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT;
+    function _.mint(address,address,uint256,uint256) external returns (bool) => DISPATCHER(true);
+    function _.burn(address,address,uint256,uint256) external returns (bool) => DISPATCHER(true);
+    function _.getIncentivesController() returns (address) => CONSTANT;
+    function _.UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT;
 
 
     // called by AToken.sol::224. A method of IPool.
-    function finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET;
+    function _.finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET;
 
     // called from: IncentivizedERC20.sol::207. A method of incentivesControllerLocal.
-    function handleAction(address user, uint256 totalSupply, uint256 userBalance) => NONDET;
+    function _.handleAction(address user, uint256 totalSupply, uint256 userBalance) => NONDET;
 
 
     // getPool() returns address => ALWAYS(100);
-    function getPool() returns address => NONDET;
+    function _.getPool() returns address => NONDET;
     
     // nissan Remark: not sure about the following 3 summarizations:
 
     // A method of Ipool
-<<<<<<< Updated upstream
-    getReserveData(address) => NONDET;
+<<<<<<< Updated upstream;
+    function _.getReserveData(address) => NONDET;
     //    _SymbolicLendingPoolL1.getReserveData(address) => NONDET;
     
-    claimAllRewards(address[],address) => NONDET;
+    function _.claimAllRewards(address[],address) => NONDET;
 
     // called in MetaTxHelpers.sol::27.
-    isValidSignature(bytes32, bytes) => NONDET;
+    function _.isValidSignature(bytes32, bytes) => NONDET;
 }
 
 
@@ -114,8 +114,8 @@ hook Sload uint256 balance _balances[KEY address a] STORAGE {
 
 invariant sumAllBalance_eq_totalSupply()
     sumAllBalance() == totalSupply()
-    filtered {f -> !f.isView && f.selector != initialize(address,uint256,string,string,uint256).selector}
-//  filtered {f -> f.selector == mint(uint256,address).selector} 
+    filtered {f -> !f.isView && f.selector != sig:initialize(address,uint256,string,string,uint256).selector}
+//  filtered {f -> f.selector == sig:mint(uint256,address).selector} 
 
 
 /// @title Static AToeknLM balancerOf(user) <= totalSupply()
@@ -178,7 +178,7 @@ invariant accumulated_fee_better(env e)
 /// If there is a non-zero share amount in the vault then the assets balance of the vault should be non-zero.
 invariant inv_nonZero_shares_imply_nonZero_assets()
     totalSupply()>0 => totalAssets()>0 
-//    filtered {f -> f.selector == withdraw(uint256,address,address).selector  }
+//    filtered {f -> f.selector == sig:withdraw(uint256,address,address).selector  }
     {
         preserved with (env e) {
             requireInvariant sumAllBalance_eq_totalSupply();
@@ -222,12 +222,12 @@ rule aTokenBalanceIsFixed(method f) {
 	
 	// Limit f values
 	require (
-		(f.selector != deposit(uint256,address).selector) &&
-		(f.selector != deposit(uint256,address,uint16,bool).selector) &&
-		(f.selector != withdraw(uint256,address,address).selector) &&
-		(f.selector != redeem(uint256,address,address).selector) &&
-		(f.selector != redeem(uint256,address,address,bool).selector) &&
-		(f.selector != mint(uint256,address).selector) &&
+		(f.selector != sig:deposit(uint256,address).selector) &&
+		(f.selector != sig:deposit(uint256,address,uint16,bool).selector) &&
+		(f.selector != sig:withdraw(uint256,address,address).selector) &&
+		(f.selector != sig:redeem(uint256,address,address).selector) &&
+		(f.selector != sig:redeem(uint256,address,address,bool).selector) &&
+		(f.selector != sig:mint(uint256,address).selector) &&
 		(f.selector != metaDeposit(
 			address,address,uint256,uint16,bool,uint256,
 			(address,address,uint256,uint256,uint8,bytes32,bytes32),
@@ -241,11 +241,11 @@ rule aTokenBalanceIsFixed(method f) {
 
 	// Exclude reward related methods
 	require (
-		(f.selector != collectAndUpdateRewards(address).selector) &&
-		(f.selector != claimRewardsOnBehalf(address,address,address[]).selector) &&
-		(f.selector != claimSingleRewardOnBehalf(address,address,address).selector) &&
-		(f.selector != claimRewardsToSelf(address[]).selector) &&
-		(f.selector != claimRewards(address,address[]).selector)
+		(f.selector != sig:collectAndUpdateRewards(address).selector) &&
+		(f.selector != sig:claimRewardsOnBehalf(address,address,address[]).selector) &&
+		(f.selector != sig:claimSingleRewardOnBehalf(address,address,address).selector) &&
+		(f.selector != sig:claimRewardsToSelf(address[]).selector) &&
+		(f.selector != sig:claimRewards(address,address[]).selector)
 	);
 
 	env e;
@@ -369,20 +369,20 @@ rule larger_deposit_imply_more_shares() {
 
 function must_NOT_revert(method f) returns bool {
     return 
-        f.selector == asset().selector ||
-        f.selector == totalAssets().selector ||
-        f.selector == maxDeposit(address).selector ||
-        f.selector == maxMint(address).selector ||
-        f.selector == maxWithdraw(address).selector ||
-        f.selector == maxRedeem(address).selector
+        f.selector == sig:asset().selector ||
+        f.selector == sig:totalAssets().selector ||
+        f.selector == sig:maxDeposit(address).selector ||
+        f.selector == sig:maxMint(address).selector ||
+        f.selector == sig:maxWithdraw(address).selector ||
+        f.selector == sig:maxRedeem(address).selector
     ;
 }
 
 
 function must_NOT_revert_unless_large_input(method f) returns bool {
     return
-        f.selector == convertToShares(uint256).selector ||
-        f.selector == convertToAssets(uint256).selector
+        f.selector == sig:convertToShares(uint256).selector ||
+        f.selector == sig:convertToAssets(uint256).selector
         ;
 }
 

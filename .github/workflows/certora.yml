@@ -57,10 +57,7 @@ jobs:
       max-parallel: 16
       matrix:
         rule:
-          - erc4626-previewDeposit.conf
-          - erc4626-previewMint.conf
-          - erc4626-previewWithdraw.conf
-          - erc4626-previewRedeem.conf
+          - erc4626-previewOPERATIONS.conf
           - lastVaultBalance_LEQ_ATokenBalThis.conf
           - totalSupply_EQ_sumAllBal.conf
           - accrueYieldCheck.conf
