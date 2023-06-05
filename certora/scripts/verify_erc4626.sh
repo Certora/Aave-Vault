@@ -20,7 +20,7 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
                @aave-v3-periphery=certora/munged/lib/aave-v3-periphery/contracts \
                @openzeppelin=certora/munged/lib/openzeppelin-contracts/contracts \
                @aave/core-v3=certora/munged/lib/aave-v3-core \
-    --msg "previewMint_amount_check By Script mulDiv4 again" \
+    --msg "previewMint_amount_check By Script mulDiv3 and mulDiv4 " \
     --settings  -t=2000,-mediumTimeout=1000,-depth=15    \
     --send_only \
     --rule previewMint_amount_check \

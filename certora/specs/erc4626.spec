@@ -8,6 +8,7 @@ methods {
 
     function _.rayMul(uint256 a,uint256 b) internal => rayMul_g(a,b) expect uint256 ALL;
     function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_g(a,b) expect uint256 ALL;
+    function _.mulDiv(uint256 x, uint256 y, uint256 denominator) internal => mulDiv3_g(x,y,denominator)  expect uint256 ALL;
     function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) internal => mulDiv4_g(x,y,denominator,rounding)  expect uint256 ALL;
 }
 
@@ -23,6 +24,9 @@ function mulDiv4_g(uint256 x, uint256 y, uint256 denominator, uint8 rounding) re
     return result;
     }*/
 
+ghost mulDiv3_g(uint256 , uint256 , uint256) returns uint256 {
+    axiom 1==1;
+}
 ghost mulDiv4_g(uint256 , uint256 , uint256, uint8) returns uint256 {
     axiom 1==1;
 }
