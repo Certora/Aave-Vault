@@ -1,32 +1,35 @@
-import "erc20.spec"
+import "erc20.spec";
 
 methods{
     //*********************  AToken.sol ********************************
     // The following was copied from StaticATokenLM spec file
     //*****************************************************************
-    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true);
-    burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true);
-    getIncentivesController() returns (address) => CONSTANT;
-    UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT;
+    function _.mint(address,address,uint256,uint256) external returns (bool) => DISPATCHER(true);
+    function _.burn(address,address,uint256,uint256) external returns (bool) => DISPATCHER(true);
+    function _.getIncentivesController() returns (address) => CONSTANT;
+    function _.UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT;
 
 
     // called by AToken.sol::224. A method of IPool.
-    finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET;
+    function _.finalizeTransfer(address, address, address, uint256, uint256, uint256) => NONDET;
 
     // called from: IncentivizedERC20.sol::207. A method of incentivesControllerLocal.
-    handleAction(address user, uint256 totalSupply, uint256 userBalance) => NONDET;
+    function _.handleAction(address user, uint256 totalSupply, uint256 userBalance) => NONDET;
 
 
 
     // nissan Remark: not sure about the following 3 summarizations:
 
-    // called in ATokenVault.sol::625. A method of IPool.
-    supply(address,uint256,address,uint16) => NONDET;
-
     // A method of Ipool
-    getReserveData(address) => NONDET;
+    function _.getReserveData(address) => NONDET;
     
-    claimAllRewards(address[],address) => NONDET;
+
+    // called in MetaTxHelpers.sol::27.
+    function _.isValidSignature(bytes32, bytes) => NONDET;
+
+    // For some reason the following 2 summarizations are ignored in the constractor
+    function _.getPool() returns address => NONDET;
+    function _.claimAllRewards(address[],address) => NONDET;
 }
 
 

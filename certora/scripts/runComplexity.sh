@@ -16,10 +16,8 @@ certoraRun src/ATokenVault.sol \
                @openzeppelin=lib/openzeppelin-contracts/contracts \
     --msg "$1" \
     --send_only \
-    --rule sanity \
-
-
-    #--method "maxWithdraw(address)"
+    --rule noRevert \
+    --method "withdrawWithSig(uint256,address,address,(uint8,bytes32,bytes32,uint256))"
 
 
 #wrapped-atoken-vault complexity checks
