@@ -1,18 +1,13 @@
-import "methods_base.spec";
+import "methods_base.spec"
 
 
 methods{
     //    mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns (uint256) envfree => mulDiv_g(x,y,denominator,rounding);
+    mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns (uint256) envfree => mulDiv4_g(x,y,denominator,rounding);
+    rayMul(uint256 x, uint256 y) returns (uint256) envfree => rayMul_g(x,y);
+    rayDiv(uint256 x, uint256 y) returns (uint256) envfree => rayDiv_g(x,y);
 
-    //function _.rayMul(uint256 x, uint256 y) returns (uint256) envfree => rayMul_g(x,y);
-    //function _.rayDiv(uint256 x, uint256 y) returns (uint256) envfree => rayDiv_g(x,y);
-    //function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns (uint256) envfree => mulDiv4_g(x,y,denominator,rounding);
-    function _.rayMul(uint256 a,uint256 b) internal => rayMul_g(a,b) expect uint256 ALL;
-    function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_g(a,b) expect uint256 ALL;
-    function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) internal => mulDiv4_g(x,y,denominator,rounding)  expect uint256 ALL;
-
-    
-    function _._accrueYield() internal => accrueYieldSummary() expect void;
+    _accrueYield() envfree => accrueYieldSummary()
 }
 
 ghost mulDiv4_g(uint256 , uint256 , uint256, uint8) returns uint256 {
@@ -51,8 +46,8 @@ filtered { f -> !harnessOnlyMethods(f) && !f.isView }
     uint256 contractATokenBal_ = _AToken.balanceOf(currentContract);
     uint256 contractULBal_ = Underlying.balanceOf(currentContract);
     assert (contractATokenBal_ != _contractATokenBal || _contractULBal != contractULBal_) && 
-            (f.selector != sig:withdrawFees(address, uint256).selector && 
-            f.selector != sig:emergencyRescue(address, address, uint256).selector) => 
+            (f.selector != withdrawFees(address, uint256).selector && 
+            f.selector != emergencyRescue(address, address, uint256).selector) => 
             accrueYieldCalled == true,
             "contract balance change should trigger yield accrual";
 }

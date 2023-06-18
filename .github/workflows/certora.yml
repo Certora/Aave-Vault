@@ -33,7 +33,7 @@ jobs:
         with: { java-version: "11", java-package: jre }
 
       - name: Install certora cli
-        run: pip install certora-cli
+        run: pip3 install certora-cli==3.6.8.post3
 
       - name: Install solc
         run: |
@@ -57,8 +57,15 @@ jobs:
       max-parallel: 16
       matrix:
         rule:
-          - erc4626-previewOPERATIONS.conf
-          - lastVaultBalance_LEQ_ATokenBalThis.conf
-          - totalSupply_EQ_sumAllBal.conf
-          - accrueYieldCheck.conf
           - changeInContractBalanceShouldCauseAccrual.conf
+          - erc4626-previewOPERATIONS.conf
+          - fees_LEQ_ATokenBal.conf
+          - lastVaultBalance_LEQ_ATokenBalThis.conf
+          - positiveSupply_imply_positiveAssets-deposit.conf
+          - positiveSupply_imply_positiveAssets-mint.conf
+          - positiveSupply_imply_positiveAssets-other.conf
+          - positiveSupply_imply_positiveAssets-redeem.conf
+          - positiveSupply_imply_positiveAssets-withdraw.conf
+          - rayMul_rayDiv_mulDiv_properties.conf
+          - totalSupply_EQ_sumAllBal.conf
+          
