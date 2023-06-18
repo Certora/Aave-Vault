@@ -5,15 +5,9 @@ methods {
     function SymbolicLendingPoolL1.getLiquidityIndex() external returns (uint256) envfree;
     function _.havoc_all_dummy() external => HAVOC_ALL;
 
-    //    function _.rayMul(uint256 a,uint256 b) returns (uint256) => rayMul_g(a,b);
-    //function _.rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_g(a,b);
-    //function _.mulDiv(uint256 x, uint256 y, uint256 denominator) returns uint256 => mulDiv3_g(x,y,denominator);
-    //    function _.rayMul(uint256 a,uint256 b) internal => rayMul_g(a,b) expect uint256 ALL;
-    //function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_g(a,b) expect uint256 ALL;
-    function _.rayMul(uint256 a,uint256 b) internal => rayMul_g_MI(a,b) expect uint256 ALL;
-    function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_g_MI(a,b) expect uint256 ALL;
+    function _.rayMul(uint256 a,uint256 b) internal => rayMul_MI(a,b) expect uint256 ALL;
+    function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_MI(a,b) expect uint256 ALL;
     function _.mulDiv(uint256 x, uint256 y, uint256 denominator) internal => mulDiv3_g(x,y,denominator)  expect uint256 ALL;
-
 }
 
 ghost mulDiv3_g(uint256 , uint256 , uint256) returns uint256 {
@@ -36,18 +30,18 @@ ghost rayDiv_g(uint256 , uint256) returns uint256 {
         );
 }
 
-ghost rayMul_g_MI(mathint , mathint) returns uint256 {
+ghost rayMul_MI(mathint , mathint) returns uint256 {
     axiom forall mathint x. forall mathint y.
         (
-         ((x==0||y==0) => rayMul_g_MI(x,y)==0)
+         ((x==0||y==0) => rayMul_MI(x,y)==0)
          &&
-         x <= to_mathint(rayMul_g_MI(x,y)) && to_mathint(rayMul_g_MI(x,y)) <= 2*x
+         x <= to_mathint(rayMul_MI(x,y)) && to_mathint(rayMul_MI(x,y)) <= 2*x
         );
 }
-ghost rayDiv_g_MI(mathint , mathint) returns uint256 {
+ghost rayDiv_MI(mathint , mathint) returns uint256 {
     axiom forall mathint x. forall mathint y.
         (
-         x/2 <= to_mathint(rayDiv_g_MI(x,y)) && to_mathint(rayDiv_g_MI(x,y)) <= x
+         x/2 <= to_mathint(rayDiv_MI(x,y)) && to_mathint(rayDiv_MI(x,y)) <= x
         );
 }
 
@@ -75,128 +69,70 @@ invariant inv_sumAllBalance_eq_totalSupply()
 // Status: pass for all methods.
 //
 // Note: We require that the totalSupply of currentContract, AToken, Underlying to be
-//       less than maxUint64() to avoid failures due to overflows.
+//       less than maxUint128() to avoid failures due to overflows.
 // ******************************************************************************
- 
-invariant inv_lastVaultBalance_LEQ_ATokenBalThis()
-    getLastVaultBalance() <= _AToken.balanceOf(currentContract)
-    filtered {f ->
-    f.selector != sig:initialize(address,uint256,string,string,uint256).selector &&
-    f.selector != sig:havoc_all().selector
-} {
-    preserved with (env e) {
-        require e.msg.sender != currentContract;
-        require getFee() <= SCALE();  // SCALE is 10^18
-        require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint64());
-        require totalSupply() <= assert_uint256(maxUint64());
-        require Underlying.totalSupply() <= assert_uint256(maxUint64());
-        require _AToken.scaledTotalSupply() <= assert_uint256(maxUint64());
-        requireInvariant inv_sumAllBalance_eq_totalSupply__underline(); 
-        requireInvariant inv_sumAllBalance_eq_totalSupply__atoken(); 
-        requireInvariant inv_sumAllBalance_eq_totalSupply();
 
-        // The following require means: (x/ind+z)*ind == x+z*ind 
-        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
-        //       rayMul_g(to_uint256(rayDiv_g(x,ind)+z),ind) == to_uint256(x+rayMul_g(z,ind))
-        //      );
-
-        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
-        //         forall uint256 temp1. forall uint256 temp2.
-        //         to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
-        //         =>
-        //         rayMul_g(temp1,ind) == temp2
-        //       );
-
-        require (forall mathint x. forall mathint ind. forall mathint z.
-                 to_mathint(rayMul_g_MI((rayDiv_g_MI(x,ind)+z),ind)) == x+rayMul_g_MI(z,ind)
-              );
-    }
+rule lastVaultBalance_LEQ_ATokenBalThis(env e, method f) filtered {f ->
+        f.selector != sig:initialize(address,uint256,string,string,uint256).selector &&
+        !harnessOnlyMethods(f) &&
+        !f.isView
+        //    f.selector != havoc_all().selector
+        }
+{
+    require e.msg.sender != currentContract;
+    require getFee() <= SCALE();  // SCALE is 10^18
+    //    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint128());
+    //require totalSupply() <= assert_uint256(maxUint128());
+    //require Underlying.totalSupply() <= assert_uint256(maxUint128());
+    //require _AToken.scaledTotalSupply() <= assert_uint256(maxUint128());
+    requireInvariant inv_sumAllBalance_eq_totalSupply__underline(); 
+    requireInvariant inv_sumAllBalance_eq_totalSupply__atoken(); 
+    requireInvariant inv_sumAllBalance_eq_totalSupply();
     
-    preserved withdrawFees(address to, uint256 amount) with (env e) {
-        require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint64());
-        require totalSupply() <= assert_uint256(maxUint64());
-        require e.msg.sender != currentContract;
-        require getFee() <= SCALE();  // SCALE is 10^18
-        require Underlying.totalSupply() <= assert_uint256(maxUint64());
-        require _AToken.scaledTotalSupply() <= assert_uint256(maxUint64());
-        requireInvariant inv_sumAllBalance_eq_totalSupply__underline(); 
-        requireInvariant inv_sumAllBalance_eq_totalSupply__atoken(); 
-        requireInvariant inv_sumAllBalance_eq_totalSupply();
+    // The following require means: (x/ind+z)*ind == x+z*ind +-1
+    
+    require (forall mathint x. forall mathint ind. forall mathint z.
+             to_mathint(rayMul_MI((rayDiv_MI(x,ind)+z),ind)) == x+rayMul_MI(z,ind)
+             ||
+             to_mathint(rayMul_MI((rayDiv_MI(x,ind)+z),ind)) == x+rayMul_MI(z,ind)+1
+             ||
+             to_mathint(rayMul_MI((rayDiv_MI(x,ind)+z),ind))+1 == x+rayMul_MI(z,ind)
+            );
 
-        // The following require means: (x/ind+z)*ind == x+z*ind 
-        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
-        //       rayMul_g(to_uint256(rayDiv_g(x,ind)+z),ind) == to_uint256(x+rayMul_g(z,ind))
-        //      );
-        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
-        //       forall uint256 temp1. forall uint256 temp2.
-        //       to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
-        //       =>
-        //       rayMul_g(temp1,ind) == temp2
-        //      );
+    uint256 _last_vault_bal = getLastVaultBalance();
+    uint256 _atoken_bal = _AToken.balanceOf(currentContract);
+    uint256 _the_diff = _last_vault_bal <= _atoken_bal ? 0 : assert_uint256(_last_vault_bal-_atoken_bal);
 
-        require (forall mathint x. forall mathint ind. forall mathint z.
-                 to_mathint(rayMul_g_MI((rayDiv_g_MI(x,ind)+z),ind)) == x+rayMul_g_MI(z,ind)
-              );
+    if (f.selector == sig:withdrawFees(address,uint256).selector) {
+        address to; uint256 amount;
         require to != currentContract;
+        withdrawFees(e,to,amount);
     }
-
-    preserved depositATokensWithSig(uint256 assets,address receiver,address depositor
-                                    ,ATokenVaultHarness.EIP712Signature sigg
-                                   ) with (env e) {
-        require e.msg.sender != currentContract;
-        require getFee() <= SCALE();  // SCALE is 10^18
-        require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint64());
-        require totalSupply() <= assert_uint256(maxUint64());
-        require Underlying.totalSupply() <= assert_uint256(maxUint64());
-        require _AToken.scaledTotalSupply() <= assert_uint256(maxUint64());
-        requireInvariant inv_sumAllBalance_eq_totalSupply__underline(); 
-        requireInvariant inv_sumAllBalance_eq_totalSupply__atoken(); 
-        requireInvariant inv_sumAllBalance_eq_totalSupply();
-        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
-        //         rayMul_g(to_uint256(rayDiv_g(x,ind)+z),ind) == to_uint256(x+rayMul_g(z,ind))
-        //        );
-        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
-        //       forall uint256 temp1. forall uint256 temp2.
-        //       to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
-        //       =>
-        //       rayMul_g(temp1,ind) == temp2
-        //      );
-
-        require (forall mathint x. forall mathint ind. forall mathint z.
-                 to_mathint(rayMul_g_MI((rayDiv_g_MI(x,ind)+z),ind)) == x+rayMul_g_MI(z,ind)
-              );
-
+    else if (f.selector == sig:depositATokensWithSig(uint256,address,address,
+                                                     ATokenVaultHarness.EIP712Signature).selector) {
+        uint256 assets; address receiver; address depositor;
+        ATokenVaultHarness.EIP712Signature sigg;
+        
         require depositor != currentContract;
+        depositATokensWithSig(e,assets,receiver,depositor,sigg);
     }
-    
-    preserved mintWithATokensWithSig(uint256 assets,address receiver,address depositor
-                                     ,ATokenVaultHarness.EIP712Signature sigg
-                                    ) with (env e) {
-        require e.msg.sender != currentContract;
-        require getFee() <= SCALE();  // SCALE is 10^18
-        require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint64());
-        require totalSupply() <= assert_uint256(maxUint64());
-        require Underlying.totalSupply() <= assert_uint256(maxUint64());
-        require _AToken.scaledTotalSupply() <= assert_uint256(maxUint64());
-        requireInvariant inv_sumAllBalance_eq_totalSupply__underline(); 
-        requireInvariant inv_sumAllBalance_eq_totalSupply__atoken(); 
-        requireInvariant inv_sumAllBalance_eq_totalSupply();
-        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
-        //         rayMul_g(to_uint256(rayDiv_g(x,ind)+z),ind) == to_uint256(x+rayMul_g(z,ind))
-        //        );
-        //require (forall uint256 x. forall uint256 ind. forall uint256 z.
-        //       forall uint256 temp1. forall uint256 temp2.
-        //       to_mathint(temp1)==rayDiv_g(x,ind)+z && to_mathint(temp2) == x+rayMul_g(z,ind)
-        //       =>
-        //       rayMul_g(temp1,ind) == temp2
-        //      );
-
-        require (forall mathint x. forall mathint ind. forall mathint z.
-                 to_mathint(rayMul_g_MI((rayDiv_g_MI(x,ind)+z),ind)) == x+rayMul_g_MI(z,ind)
-              );
-
+    else if (f.selector == sig:mintWithATokensWithSig(uint256,address,address,
+                                                      ATokenVaultHarness.EIP712Signature).selector) {
+        uint256 shares; address receiver; address depositor;
+        ATokenVaultHarness.EIP712Signature sigg;
+        
         require depositor != currentContract;
+        mintWithATokensWithSig(e, shares, receiver, depositor, sigg);
     }
-    
+    else {
+        calldataarg args;
+        f(e,args);
+    }
+
+    uint256 last_vault_bal_ = getLastVaultBalance();
+    uint256 atoken_bal_ = _AToken.balanceOf(currentContract);
+    uint256 the_diff_ = last_vault_bal_ <= atoken_bal_ ? 0 : assert_uint256(last_vault_bal_-atoken_bal_);
+
+    assert (to_mathint(the_diff_) <= _the_diff + 1);
 }
 

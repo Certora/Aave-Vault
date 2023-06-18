@@ -9,7 +9,7 @@ methods {
     function _.rayMul(uint256 a,uint256 b) internal => rayMul_g(a,b) expect uint256 ALL;
     function _.rayDiv(uint256 a,uint256 b) internal => rayDiv_g(a,b) expect uint256 ALL;
     function _.mulDiv(uint256 x, uint256 y, uint256 denominator) internal => mulDiv3_g(x,y,denominator)  expect uint256 ALL;
-    function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) internal => mulDiv4_g(x,y,denominator,rounding)  expect uint256 ALL;
+    //    function _.mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) internal => mulDiv4_g(x,y,denominator,rounding)  expect uint256 ALL;
 }
 
 /*
@@ -98,7 +98,7 @@ rule must_not_revert_unless_large_input__convertToShares() {
     env e;
     require e.msg.value == 0;
     uint256 assets;
-    require (assets <= assert_uint256(maxUint64()) );
+    require (assets <= assert_uint256(maxUint128()) );
     
     convertToShares@withrevert(e, assets);
     bool reverted = lastReverted;
@@ -118,7 +118,7 @@ rule must_not_revert_unless_large_input__convertToAssets() {
     env e;
     require e.msg.value == 0;
     uint256 shares;
-    require (shares <= assert_uint256(maxUint64()));
+    require (shares <= assert_uint256(maxUint128()));
     
     convertToAssets@withrevert(e, shares);
     bool reverted = lastReverted;
@@ -150,14 +150,13 @@ rule previewDeposit_amount_check() {
     uint256 previewShares;
     uint256 shares;
 
-    require getLastUpdated() <= e1.block.timestamp;
-    require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp <= e2.block.timestamp;
     require e2.block.timestamp <= 0xffffff;
 
-    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint64());
-    require getAccumulatedFees() <= maxUint64();
-    require getLastVaultBalance() <= assert_uint256(maxUint64());
-    require totalSupply() <= assert_uint256(maxUint64());
+    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint128());
+    require getAccumulatedFees() <= maxUint128();
+    require getLastVaultBalance() <= assert_uint256(maxUint128());
+    require totalSupply() <= assert_uint256(maxUint128());
     
     require(getFee() <= SCALE());  // SCALE is 10^18
 
@@ -181,8 +180,7 @@ rule previewDeposit_amount_check() {
 */
 
 rule previewDeposit_has_NO_threshold(env e1, env e2) {
-    require getLastUpdated() <= e1.block.timestamp;
-    require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp <= e2.block.timestamp;
     require e2.block.timestamp <= 0xffffff;
 
     uint256 assets;
@@ -221,14 +219,13 @@ rule previewMint_amount_check() {
     uint256 previewAssets;
     uint256 assets;
 
-    require getLastUpdated() <= e1.block.timestamp;
-    require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp <= e2.block.timestamp;
     require e2.block.timestamp <= 0xffffff;
 
-    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint64());
-    require getAccumulatedFees() <= maxUint64();
-    require getLastVaultBalance() <= assert_uint256(maxUint64());
-    require totalSupply() <= assert_uint256(maxUint64());
+    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint128());
+    require getAccumulatedFees() <= maxUint128();
+    require getLastVaultBalance() <= assert_uint256(maxUint128());
+    require totalSupply() <= assert_uint256(maxUint128());
 
     require(getFee() <= SCALE());  // SCALE is 10^18
         
@@ -254,8 +251,7 @@ rule previewMint_amount_check() {
 */
 
 rule previewMint_has_NO_threshold(env e1, env e2) {
-    require getLastUpdated() <= e1.block.timestamp;
-    require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp <= e2.block.timestamp;
     require e2.block.timestamp <= 0xffffff;
     
     uint256 shares;
@@ -289,8 +285,7 @@ rule previewMint_has_NO_threshold(env e1, env e2) {
 // The amount returned by previewWithdraw is exactly equal to that returned by the withdraw function.
 
 rule previewWithdraw_amount_check(env e1, env e2) {
-    require getLastUpdated() <= e1.block.timestamp;
-    require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp <= e2.block.timestamp;
     require e2.block.timestamp <= 0xffffff;
 
     uint256 assets;
@@ -299,10 +294,10 @@ rule previewWithdraw_amount_check(env e1, env e2) {
     uint256 shares;
     uint256 previewShares;
 
-    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint64());
-    require getAccumulatedFees() <= maxUint64();
-    require getLastVaultBalance() <= assert_uint256(maxUint64());
-    require totalSupply() <= assert_uint256(maxUint64());
+    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint128());
+    require getAccumulatedFees() <= maxUint128();
+    require getLastVaultBalance() <= assert_uint256(maxUint128());
+    require totalSupply() <= assert_uint256(maxUint128());
     require(getFee() <= SCALE());  // SCALE is 10^18
 
     previewShares = previewWithdraw(e1, assets);
@@ -325,8 +320,7 @@ rule previewWithdraw_amount_check(env e1, env e2) {
 */
 
 rule previewWithdraw_has_NO_threshold(env e1, env e2) {
-    require getLastUpdated() <= e1.block.timestamp;
-    require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp <= e2.block.timestamp;
     require e2.block.timestamp <= 0xffffff;
 
     uint256 assets;
@@ -369,14 +363,13 @@ rule previewRedeem_amount_check(env e1, env e2){
     uint256 previewAssets;
     uint256 assets;
     
-    require getLastUpdated() <= e1.block.timestamp;
-    require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp <= e2.block.timestamp;
     require e2.block.timestamp <= 0xffffff;
 
-    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint64());
-    require getAccumulatedFees() <= maxUint64();
-    require getLastVaultBalance() <= assert_uint256(maxUint64());
-    require totalSupply() <= assert_uint256(maxUint64());
+    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint128());
+    require getAccumulatedFees() <= maxUint128();
+    require getLastVaultBalance() <= assert_uint256(maxUint128());
+    require totalSupply() <= assert_uint256(maxUint128());
     require (getFee() <= SCALE());  // SCALE is 10^18
 
     previewAssets = previewRedeem(e1, shares);
@@ -404,8 +397,7 @@ rule previewRedeem_amount_check(env e1, env e2){
 */
 
 rule previewRedeem_has_NO_threshold(env e1, env e2) {
-    require getLastUpdated() <= e1.block.timestamp;
-    require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp <= e2.block.timestamp;
     require e2.block.timestamp <= 0xffffff;
     
     uint256 shares;

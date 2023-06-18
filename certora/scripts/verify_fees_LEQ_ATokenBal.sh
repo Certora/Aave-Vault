@@ -14,15 +14,15 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
            AToken:_underlyingAsset=DummyERC20_aTokenUnderlying \
     --solc solc8.10 \
     --optimistic_loop \
-    --staging pre_cvl2 \
+    --cloud \
     --packages @openzeppelin-upgradeable=certora/munged/lib/openzeppelin-contracts-upgradeable/contracts \
                @aave-v3-core=certora/munged/lib/aave-v3-core/contracts \
                @aave-v3-periphery=certora/munged/lib/aave-v3-periphery/contracts \
                @openzeppelin=certora/munged/lib/openzeppelin-contracts/contracts \
                @aave/core-v3=certora/munged/lib/aave-v3-core \
     --msg "$1::  $2" \
-    --settings  -t=2000,-mediumTimeout=1000,-depth=15    \
-    --settings -enableEventReporting \
+    --prover_args "-mediumTimeout 1000 -depth 15"    \
+    --smt_timeout 2000 \
     --rule $1 \
     --send_only \
 

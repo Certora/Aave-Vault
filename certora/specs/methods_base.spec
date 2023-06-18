@@ -12,7 +12,6 @@ methods{
 
     function maxDeposit(address) external returns (uint256) envfree;
     function maxRedeem(address) external returns (uint256);
-    function getLastUpdated() external returns (uint256) envfree;
 
     function getFee() external returns (uint256) envfree;
     function owner() external returns (address) envfree;
@@ -22,7 +21,7 @@ methods{
     function getAccumulatedFees() external returns (uint128) envfree;
     function maxAssetsWithdrawableFromAave() external returns (uint256) envfree;
     
-    function mulDivWrapper(uint256, uint256, uint256, uint8) external returns (uint256) envfree;
+    function mulDiv__(uint256, uint256, uint256, uint8) external returns (uint256) envfree;
     function previewRedeem(uint256) external returns (uint256);
 
     function _AToken.totalSupply() external returns uint256 envfree;
@@ -42,8 +41,8 @@ methods{
     //function _.getIncentivesController() external returns (address) => CONSTANT;
     //function _.UNDERLYING_ASSET_ADDRESS() external returns (address) => CONSTANT;
 
-    function _.mint(address,address,uint256,uint256) external => DISPATCHER(true);
-    function _.burn(address,address,uint256,uint256) external => DISPATCHER(true);
+    //    function _.mint(address,address,uint256,uint256) internal => DISPATCHER(true);
+    //function _.burn(address,address,uint256,uint256) internal => DISPATCHER(true);
     function _.getIncentivesController() external => CONSTANT;
     function _.UNDERLYING_ASSET_ADDRESS() external => CONSTANT;
 
@@ -76,14 +75,75 @@ definition RAY_HALF() returns uint256 = 5*10^26;
 definition SCALE() returns uint256 = 1000000000000000000;
 
 definition harnessOnlyMethods(method f) returns bool =
-        (f.selector == sig:havoc_all().selector ||
-        f.selector == sig:accrueYield().selector ||
-        f.selector == sig:getAccumulatedFees().selector ||
-        f.selector == sig:mulDivWrapper(uint256,uint256,uint256,uint8).selector);
+    (f.selector == sig:havoc_all().selector ||
+     f.selector == sig:accrueYield().selector ||
+     f.selector == sig:getAccumulatedFees().selector ||
+     f.selector == sig:mulDiv__(uint256,uint256,uint256,uint8).selector ||
+     f.selector == sig:rayMul__(uint256,uint256).selector ||
+     f.selector == sig:rayDiv__(uint256,uint256).selector ||
+     f.selector == sig:handleDeposit_wrapper(uint256,address,address, bool).selector ||
+     f.selector == sig:handleMint_wrapper(uint256,address,address,bool).selector ||
+     f.selector == sig:handleWithdraw_wrapper(uint256,address,address,address,bool).selector ||
+     f.selector == sig:handleRedeem_wrapper(uint256,address,address,address,bool).selector
+    );
 
-definition depositWithoutSignatureMethods(method f) returns bool =
-        (f.selector == sig:deposit(uint256, address).selector ||
-        f.selector == sig:depositATokens(uint256, address).selector);
+definition is_depositSig_method(method f) returns bool =
+    (
+     f.selector == sig:depositWithSig(uint256,address,address,
+                                      ATokenVaultHarness.EIP712Signature).selector ||
+     f.selector == sig:depositATokensWithSig(uint256,address,address,
+                                             ATokenVaultHarness.EIP712Signature).selector
+    );
+definition is_mintSig_method(method f) returns bool =
+    (
+     f.selector == sig:mintWithSig(uint256,address,address,
+                                   ATokenVaultHarness.EIP712Signature).selector ||
+     f.selector == sig:mintWithATokensWithSig(uint256,address,address,
+                                              ATokenVaultHarness.EIP712Signature).selector
+    );
+definition is_withdrawSig_method(method f) returns bool =
+    (
+     f.selector == sig:withdrawWithSig(uint256,address,address,
+                                       ATokenVaultHarness.EIP712Signature).selector ||
+     f.selector == sig:withdrawATokensWithSig(uint256,address,address,
+                                              ATokenVaultHarness.EIP712Signature).selector
+    );
+definition is_redeemSig_method(method f) returns bool =
+    (
+     f.selector == sig:redeemWithSig(uint256,address,address,
+                                     ATokenVaultHarness.EIP712Signature).selector ||
+     f.selector == sig:redeemWithATokensWithSig(uint256,address,address,
+                                                ATokenVaultHarness.EIP712Signature).selector
+    );
+
+definition is_sig_method(method f) returns bool =
+    (
+     is_depositSig_method(f) || is_mintSig_method(f) || is_withdrawSig_method(f) || is_redeemSig_method(f)
+    );
+
+definition is_deposit_method(method f) returns bool =
+    (f.selector == sig:deposit(uint256, address).selector ||
+     f.selector == sig:depositATokens(uint256, address).selector ||
+     is_depositSig_method(f)
+    );
+definition is_mint_method(method f) returns bool =
+    (f.selector == sig:mint(uint256, address).selector ||
+     f.selector == sig:mintWithATokens(uint256,address).selector ||
+     is_mintSig_method(f)
+    );
+definition is_withdraw_method(method f) returns bool =
+    (
+     f.selector == sig:withdraw(uint256,address,address).selector ||
+     f.selector == sig:withdrawATokens(uint256,address,address).selector ||
+     is_withdrawSig_method(f)
+    );
+definition is_redeem_method(method f) returns bool =
+    (
+     f.selector == sig:redeem(uint256,address,address).selector ||
+     f.selector == sig:redeemAsATokens(uint256,address,address).selector ||
+     is_redeemSig_method(f)
+    );
+
 
 // ghost variable to track the calling of _accrueYield function
 ghost bool accrueYieldCalled{
@@ -151,10 +211,11 @@ function ay(){
 
 function maxUint128() returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
 function maxUint120() returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
-function maxUint64() returns uint128  {
-    return 0xFFFFFFFFFFFFFFFF;
-
-}
+//function maxUint64()  returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
+//function maxUint64() returns uint128  {
+//    return 0xFFFFFFFFFFFFFFFF;
+//
+//}
 
 
 
