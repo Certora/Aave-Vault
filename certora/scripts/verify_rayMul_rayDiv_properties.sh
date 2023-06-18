@@ -3,39 +3,45 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
     certora/harness/pool/SymbolicLendingPoolL1.sol \
     certora/harness/tokens/DummyERC20_aTokenUnderlying.sol \
     certora/munged/lib/aave-v3-core/contracts/protocol/tokenization/AToken.sol \
-    --verify ATokenVaultHarness:certora/specs/deposit_AToken_VS_Underline.spec \
+    --verify ATokenVaultHarness:certora/specs/rayMul_rayDiv_properties.spec \
     --link ATokenVaultHarness:AAVE_POOL=SymbolicLendingPoolL1 \
            ATokenVaultHarness:ATOKEN=AToken \
            ATokenVaultHarness:UNDERLYING=DummyERC20_aTokenUnderlying \
            ATokenVaultHarness:DUMMY=DummyContract \
            AToken:POOL=SymbolicLendingPoolL1 \
+           AToken:_underlyingAsset=DummyERC20_aTokenUnderlying \
            SymbolicLendingPoolL1:underlyingToken=DummyERC20_aTokenUnderlying \
            SymbolicLendingPoolL1:aToken=AToken \
-           AToken:_underlyingAsset=DummyERC20_aTokenUnderlying \
     --solc solc8.10 \
     --optimistic_loop \
-    --staging pre_cvl2 \
+    --cloud \
     --packages @openzeppelin-upgradeable=certora/munged/lib/openzeppelin-contracts-upgradeable/contracts \
                @aave-v3-core=certora/munged/lib/aave-v3-core/contracts \
                @aave-v3-periphery=certora/munged/lib/aave-v3-periphery/contracts \
                @openzeppelin=certora/munged/lib/openzeppelin-contracts/contracts \
                @aave/core-v3=certora/munged/lib/aave-v3-core \
     --msg "$1::  $2" \
-    --settings  -t=2000,-mediumTimeout=1000,-depth=15    \
-    --settings -enableEventReporting \
-    --rule $1 \
+    --settings  "-t=2000,-mediumTimeout=1000,-depth=15"  \
     --send_only \
+    --disable_auto_cache_key_gen \
 
-
-    #--method "depositATokens(uint256,address)"    
-
+#    --rule $1 \
 
 
     #--typecheck_only
 
+#    --msg "$1::  $2" \
 
-# --method "depositATokensWithSig(uint256,address,address,(uint8,bytes32,bytes32,uint256))"
-# --method "depositATokens(uint256,address)"    
+
+#--method "mintWithATokensWithSig(uint256,address,address,(uint8,bytes32,bytes32,uint256))"
+
+   #    --method "redeem(uint256,address,address)" \
+
+
+
+    #--method "depositATokensWithSig(uint256,address,address,(uint8,bytes32,bytes32,uint256))"
+    #--method "depositATokens(uint256,address)" 
+    
 #    --method "depositATokens(uint256,address)" \
 #    --method "deposit(uint256,address)" \
 #    --method "withdraw(uint256,address,address)" \
@@ -46,7 +52,6 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
 
 
 
-    #--disable_auto_cache_key_gen \
 
 #    --method "mintWithATokens(uint256,address)" \
 #    --rule must_not_revert \

@@ -10,9 +10,8 @@ methods{
     //depositATokensWithSig(uint256, address, address, (uint8,bytes32,bytes32,uint256)) returns (uint256);
     depositATokensWithSig(uint256, address, address, _ATokenVaultHarness.EIP712Signature) returns (uint256);
 
-    maxDeposit(address) returns (uint256) envfree
-    maxRedeem(address) returns (uint256) 
-    getLastUpdated() returns (uint256) envfree
+    maxDeposit(address) returns (uint256) envfree;
+    maxRedeem(address) returns (uint256);
 
     getFee() returns (uint256) envfree
     owner() returns (address) envfree
@@ -22,24 +21,24 @@ methods{
     getAccumulatedFees() returns (uint128) envfree;
     maxAssetsWithdrawableFromAave() returns (uint256) envfree;
     
-    mulDivWrapper(uint256, uint256, uint256, uint8) envfree
-    previewRedeem(uint256) returns (uint256) 
+    mulDivWrapper(uint256, uint256, uint256, uint8) envfree;
+    previewRedeem(uint256) returns (uint256); 
 
-    _AToken.totalSupply() returns uint256 envfree
-    _AToken.balanceOf(address) returns (uint256) envfree
-    _AToken.scaledTotalSupply() returns (uint256) envfree
-    _AToken.scaledBalanceOf(address) returns (uint256) envfree
-    _AToken.transferFrom(address,address,uint256) returns (bool)
+    _AToken.totalSupply() returns uint256 envfree;
+    _AToken.balanceOf(address) returns (uint256) envfree;
+    _AToken.scaledTotalSupply() returns (uint256) envfree;
+    _AToken.scaledBalanceOf(address) returns (uint256) envfree;
+    _AToken.transferFrom(address,address,uint256) returns (bool);
 
-    Underlying.balanceOf(address) returns (uint256) envfree
+    Underlying.balanceOf(address) returns (uint256) envfree;
 
     // //*********************  AToken.sol ********************************
     // // The following was copied from StaticATokenLM spec file
     // //*****************************************************************
-    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-    burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
-    getIncentivesController() returns (address) => CONSTANT
-    UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT
+    //    mint(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
+    //burn(address,address,uint256,uint256) returns (bool) => DISPATCHER(true)
+    getIncentivesController() returns (address) => CONSTANT;
+    UNDERLYING_ASSET_ADDRESS() returns (address) => CONSTANT;
 
 
     // called by AToken.sol::224. A method of IPool.
@@ -69,14 +68,76 @@ definition RAY_HALF() returns uint256 = 5*10^26;
 definition SCALE() returns uint256 = 1000000000000000000;
 
 definition harnessOnlyMethods(method f) returns bool =
-        (f.selector == havoc_all().selector ||
-        f.selector == accrueYield().selector ||
-        f.selector == getAccumulatedFees().selector ||
-        f.selector == mulDivWrapper(uint256,uint256,uint256,uint8).selector);
+    (f.selector == havoc_all().selector ||
+     f.selector == accrueYield().selector ||
+     f.selector == getAccumulatedFees().selector ||
+     f.selector == mulDiv__(uint256,uint256,uint256,uint8).selector ||
+     f.selector == rayMul__(uint256,uint256).selector ||
+     f.selector == rayDiv__(uint256,uint256).selector ||
+     f.selector == handleDeposit_wrapper(uint256,address,address, bool).selector ||
+     f.selector == handleMint_wrapper(uint256,address,address,bool).selector ||
+     f.selector == handleWithdraw_wrapper(uint256,address,address,address,bool).selector ||
+     f.selector == handleRedeem_wrapper(uint256,address,address,address,bool).selector
+    );
 
-definition depositWithoutSignatureMethods(method f) returns bool =
-        (f.selector == deposit(uint256, address).selector ||
-        f.selector == depositATokens(uint256, address).selector);
+definition is_depositSig_method(method f) returns bool =
+    (
+     f.selector == depositWithSig(uint256,address,address,
+                                  (uint8,bytes32,bytes32,uint256)).selector ||
+     f.selector == depositATokensWithSig(uint256,address,address,
+                                         (uint8,bytes32,bytes32,uint256)).selector
+    );
+definition is_mintSig_method(method f) returns bool =
+    (
+     f.selector == mintWithATokensWithSig(uint256,address,address,
+                                          (uint8,bytes32,bytes32,uint256)).selector ||
+     f.selector == mintWithSig(uint256,address,address,
+                               (uint8,bytes32,bytes32,uint256)).selector
+    );
+definition is_withdrawSig_method(method f) returns bool =
+    (
+     f.selector == withdrawWithSig(uint256,address,address,
+                                   (uint8,bytes32,bytes32,uint256)).selector ||
+     f.selector == withdrawATokensWithSig(uint256,address,address,
+                                          (uint8,bytes32,bytes32,uint256)).selector
+    );
+definition is_redeemSig_method(method f) returns bool =
+    (
+     f.selector == redeemWithSig(uint256,address,address,
+                                 (uint8,bytes32,bytes32,uint256)).selector ||
+     f.selector == redeemWithATokensWithSig(uint256,address,address,
+                                            (uint8,bytes32,bytes32,uint256)).selector
+    );
+
+definition is_sig_method(method f) returns bool =
+    (
+     is_depositSig_method(f) || is_mintSig_method(f) || is_withdrawSig_method(f) || is_redeemSig_method(f)
+    );
+
+
+definition is_deposit_method(method f) returns bool =
+    (f.selector == deposit(uint256, address).selector ||
+     f.selector == depositATokens(uint256, address).selector ||
+     is_depositSig_method(f)
+    );
+definition is_mint_method(method f) returns bool =
+    (f.selector == mint(uint256, address).selector ||
+     f.selector == mintWithATokens(uint256,address).selector ||
+     is_mintSig_method(f)
+    );
+definition is_withdraw_method(method f) returns bool =
+    (
+     f.selector == withdraw(uint256,address,address).selector ||
+     f.selector == withdrawATokens(uint256,address,address).selector ||
+     is_withdrawSig_method(f)
+    );
+definition is_redeem_method(method f) returns bool =
+    (
+     f.selector == redeem(uint256,address,address).selector ||
+     f.selector == redeemAsATokens(uint256,address,address).selector ||
+     is_redeemSig_method(f)
+    );
+
 
 // ghost variable to track the calling of _accrueYield function
 ghost bool accrueYieldCalled{
@@ -142,12 +203,14 @@ function ay(){
 }
 
 
+function maxUint132() returns uint256 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
 function maxUint128() returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
 function maxUint120() returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
-function maxUint64() returns uint128  {
-    return 0xFFFFFFFFFFFFFFFF;
-
-}
+//function maxUint64()  returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
+//function maxUint64() returns uint128  {
+//    return 0xFFFFFFFFFFFFFFFF;
+//    
+//}
 
 // axiom f * deno < x*y
 // axioms for requirement in CVL function

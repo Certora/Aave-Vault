@@ -14,7 +14,7 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
            AToken:_underlyingAsset=DummyERC20_aTokenUnderlying \
     --solc solc8.10 \
     --optimistic_loop \
-    --staging pre_cvl2 \
+    --cloud \
     --packages @openzeppelin-upgradeable=certora/munged/lib/openzeppelin-contracts-upgradeable/contracts \
                @aave-v3-core=certora/munged/lib/aave-v3-core/contracts \
                @aave-v3-periphery=certora/munged/lib/aave-v3-periphery/contracts \
@@ -22,13 +22,14 @@ certoraRun certora/harness/ATokenVaultHarness.sol \
                @aave/core-v3=certora/munged/lib/aave-v3-core \
     --msg "$1::  $2" \
     --settings  -t=2000,-mediumTimeout=1000,-depth=15    \
-    --settings -enableEventReporting \
-    --rule $1 \
     --send_only \
-    --method "deposit(uint256,address)" \
+    --rule $1 \
 
 
     
+    #--method "initialize(address,uint256,string, string, uint256)"
+
+
     #--typecheck_only
 
     #--method "withdrawATokensWithSig(uint256,address,address,(uint8,bytes32,bytes32,uint256))"

@@ -10,14 +10,17 @@ methods {
     rayDiv(uint256 a,uint256 b) returns (uint256) => rayDiv_g(a,b);
     
     havoc_all_dummy() => HAVOC_ALL;
-
     mulDiv(uint256 x, uint256 y, uint256 denominator, uint8 rounding) returns uint256 =>
         mulDiv4_g(x,y,denominator,rounding);
 }
 
 ghost mulDiv4_g(uint256 , uint256 , uint256, uint8) returns uint256 {
     axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 rounding.
-        y<=denominator => mulDiv4_g(x,y,denominator,rounding)<=x;
+        (
+         (mulDiv4_g(x,y,denominator,rounding)*denominator <= x*y)
+         &&
+         (y<=denominator => mulDiv4_g(x,y,denominator,rounding)<=x)
+        );
 }
 
 ghost rayMul_g(uint256 , uint256) returns uint256 {
@@ -37,7 +40,10 @@ ghost rayDiv_g(uint256 , uint256) returns uint256 {
 
 
 function max_possible_fees() returns uint256 {
-    return to_uint256(getAccumulatedFees() + (_AToken.balanceOf(currentContract)-getLastVaultBalance()));
+    return to_uint256(getAccumulatedFees()
+                      +
+                      (_AToken.balanceOf(currentContract)-getLastVaultBalance())
+                     );
 }
 
 
@@ -79,37 +85,22 @@ invariant lastVaultBalance_OK()
 //         See in fee_LEQ_ATokenBal-RW.spec
 //
 // Note: We require that the totalSupply of currentContract, AToken, Underlying to be
-//       less than maxUint64() to avoid failures due to overflows.
+//       less than maxUint128() to avoid failures due to overflows.
 // ******************************************************************************
     
-rule rl_getClaimableFees_LEQ_ATokenBalance(method f, env e) {
-    require getLastUpdated() <= e.block.timestamp;
+function getCLMFees_LEQ_ATokenBAL_1(method f) {
+    env e;
     require e.msg.sender != currentContract;
 
-    require(f.selector != havoc_all().selector);
-    require(f.selector != withdrawATokensWithSig(uint256,address,address,
-                                                 (uint8,bytes32,bytes32,uint256)).selector);
-    require(f.selector != redeemWithATokensWithSig(uint256,address,address,
-                                                   (uint8,bytes32,bytes32,uint256)).selector );
-    require(f.selector != withdrawWithSig(uint256,address,address,
-                                          (uint8,bytes32,bytes32,uint256)).selector);
-    require(f.selector != redeemWithSig(uint256,address,address,
-                                        (uint8,bytes32,bytes32,uint256)).selector);
-    require(f.selector != withdrawFees(address,uint256).selector);
-    require(f.selector != redeemAsATokens(uint256,address,address).selector);
-    require(f.selector != withdraw(uint256,address,address).selector);
-    require(f.selector != withdrawATokens(uint256,address,address).selector);
-    require(f.selector != redeem(uint256,address,address).selector);
-
     require getFee() <= SCALE();  // SCALE is 10^18
-    require _AToken.balanceOf(currentContract) <= maxUint64();
-    require totalSupply() <= maxUint64();
-    require Underlying.totalSupply() <= maxUint64();
-    require _AToken.scaledTotalSupply() <= maxUint64();
+    require _AToken.balanceOf(currentContract) <= maxUint128();
+    require totalSupply() <= maxUint128();
+    require Underlying.totalSupply() <= maxUint128();
+    require _AToken.scaledTotalSupply() <= maxUint128();
     requireInvariant inv_sumAllBalance_eq_totalSupply__underline(); 
     requireInvariant inv_sumAllBalance_eq_totalSupply__atoken(); 
     requireInvariant inv_sumAllBalance_eq_totalSupply();
-    requireInvariant lastVaultBalance_OK();
+    //requireInvariant lastVaultBalance_OK();
     
     uint256 ind = _SymbolicLendingPoolL1.getLiquidityIndex();
     uint256 s_bal = _AToken.scaledBalanceOf(currentContract);
@@ -151,3 +142,64 @@ rule rl_getClaimableFees_LEQ_ATokenBalance(method f, env e) {
     assert(max_possible_fees() <= _AToken.balanceOf(currentContract));
 }
 
+rule getCLMFees_LEQ_ATokenBAL_DM_other(method f) filtered {f ->
+    !harnessOnlyMethods(f) &&
+    !f.isView &&
+    !is_withdraw_method(f) &&
+    !is_redeem_method(f) &&
+    f.selector != withdrawFees(address,uint256).selector
+}
+{
+    getCLMFees_LEQ_ATokenBAL_1(f);
+}
+
+
+
+function getCLMFees_LEQ_ATokenBAL_2(method f) {
+    env e;
+    require e.msg.sender != currentContract;
+    
+    require getFee() <= SCALE();  // SCALE is 10^18
+    require _AToken.balanceOf(currentContract) <= maxUint128();
+    require totalSupply() <= maxUint128();
+    require Underlying.totalSupply() <= maxUint128();
+    require _AToken.scaledTotalSupply() <= maxUint128();
+    requireInvariant inv_sumAllBalance_eq_totalSupply__underline(); 
+    requireInvariant inv_sumAllBalance_eq_totalSupply__atoken(); 
+    requireInvariant inv_sumAllBalance_eq_totalSupply();
+    requireInvariant lastVaultBalance_OK();
+    
+    uint256 ind = _SymbolicLendingPoolL1.getLiquidityIndex();
+    uint256 s_bal = _AToken.scaledBalanceOf(currentContract);
+
+    
+    // The following require means: (s_bal - ass/ind)*ind == s_bal*ind - ass
+    require (forall uint256 ass.
+             rayMul_g(to_uint256(s_bal-rayDiv_g(ass,ind)),ind) == to_uint256(rayMul_g(s_bal,ind)-ass)
+            );
+
+    // The following require means: (x/ind+z)*ind == x+z*ind 
+    //require (forall uint256 x. forall uint256 ind. forall uint256 z.
+    //         rayMul_g(to_uint256(rayDiv_g(x,ind)+z),ind) == to_uint256(x+rayMul_g(z,ind))
+    //        );
+    
+    //require(_AToken.balanceOf(currentContract) < 1000);
+    //require(getAccumulatedFees()*2 <= _AToken.balanceOf(currentContract));
+    require(max_possible_fees() <= _AToken.balanceOf(currentContract));
+    
+    calldataarg args;
+    f(e,args);
+
+    assert(max_possible_fees() <= _AToken.balanceOf(currentContract));
+}
+
+rule getCLMFees_LEQ_ATokenBAL_RW(method f) filtered {f ->
+        !harnessOnlyMethods(f) &&
+        !f.isView &&
+        (is_withdraw_method(f) || is_redeem_method(f) ||
+         f.selector == withdrawFees(address,uint256).selector
+        )
+}
+{
+    getCLMFees_LEQ_ATokenBAL_2(f);
+}
