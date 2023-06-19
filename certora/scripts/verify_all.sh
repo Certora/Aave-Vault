@@ -19,3 +19,5 @@ certoraRun --send_only certora/conf/positiveSupply_imply_positiveAssets-withdraw
 certoraRun --send_only certora/conf/positiveSupply_imply_positiveAssets-redeem.conf   
 
 certoraRun --send_only certora/conf/positiveSupply_imply_positiveAssets-other.conf
+
+certoraRun --send_only certora/conf/accrueYieldCheck.conf

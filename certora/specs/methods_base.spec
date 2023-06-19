@@ -215,22 +215,6 @@ function maxUint120() returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
 // axiom f * deno < x*y
 // axioms for requirement in CVL function
 
-ghost mulDiv_g(uint256, uint256, uint256, uint8) returns uint256 {
-    axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 rounding.
-    rounding == 0 => mulDiv_g(x, y, denominator, rounding)*denominator <= x*y;
-    
-    axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 rounding.
-    rounding == 1 => mulDiv_g(x, y, denominator, rounding)*denominator <= x*y+denominator;
-    
-    axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 rounding. 
-    rounding == 0 => x*y < mulDiv_g(x,y,denominator, rounding)*denominator + denominator;
-    
-    axiom forall uint256 x. forall uint256 y. forall uint256 denominator. forall uint8 rounding.
-    rounding == 1 => x*y < mulDiv_g(x,y,denominator, rounding)*denominator;
-}
-
-
-
 function accrueYieldSummary(){
     accrueYieldCalled = true;
 }

@@ -68,4 +68,5 @@ jobs:
           - positiveSupply_imply_positiveAssets-withdraw.conf
           - rayMul_rayDiv_mulDiv_properties.conf
           - totalSupply_EQ_sumAllBal.conf
+          - accrueYieldCheck.conf
           
