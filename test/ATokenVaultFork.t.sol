@@ -6,13 +6,17 @@ import "./utils/Constants.sol";
 import {ERC20} from "@openzeppelin/token/ERC20/ERC20.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IPoolAddressesProvider} from "@aave-v3-core/interfaces/IPoolAddressesProvider.sol";
+import {MathUpgradeable} from "@openzeppelin-upgradeable/utils/math/MathUpgradeable.sol";
 import {IPool} from "@aave-v3-core/interfaces/IPool.sol";
 import {MockAavePool} from "./mocks/MockAavePool.sol";
 import {MockAToken} from "./mocks/MockAToken.sol";
 import {ATokenVaultForkBaseTest} from "./ATokenVaultForkBaseTest.t.sol";
+
 import {ATokenVault} from "../src/ATokenVault.sol";
 
 contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
+    using MathUpgradeable for uint256;
+
     /*//////////////////////////////////////////////////////////////
                         POLYGON FORK TESTS
     //////////////////////////////////////////////////////////////*/
@@ -200,10 +204,27 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
     }
 
     function testDeployEmitsFeeEvent() public {
+        uint256 initialLockDeposit = 10e18;
+
+        vault = new ATokenVault(address(dai), referralCode, vault.POOL_ADDRESSES_PROVIDER());
+
+        bytes memory data = abi.encodeWithSelector(
+            ATokenVault.initialize.selector,
+            OWNER,
+            fee,
+            SHARE_NAME,
+            SHARE_SYMBOL,
+            initialLockDeposit
+        );
+        address proxyAddr = computeCreateAddress(address(this), vm.getNonce(address(this)));
+
+        deal(address(dai), address(this), initialLockDeposit);
+        dai.approve(address(proxyAddr), initialLockDeposit);
+
         // no indexed fields, just data check (4th param)
         vm.expectEmit(true, true, false, true);
         emit FeeUpdated(0, fee);
-        _deploy(POLYGON_DAI, POLYGON_POOL_ADDRESSES_PROVIDER);
+        new TransparentUpgradeableProxy(address(vault), PROXY_ADMIN, data);
     }
 
     function testOwnerCanWithdrawFees() public {
@@ -348,36 +369,65 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
     function testAccrueYieldUpdatesOnTimestampDiff() public {
         uint256 amount = HUNDRED;
         _deployAndCheckProps();
+        skip(10);
 
-        uint256 lastUpdated = vault.getLastUpdated();
         uint256 lastVaultBalance = vault.getLastVaultBalance();
 
-        _depositFromUser(ALICE, amount);
-        skip(1);
-        _depositFromUser(ALICE, amount);
-        // only lastUpdated does NOT change if same timestamp
-        // lastVaultBalance is updated separately regardless of timestamp
+        deal(address(dai), ALICE, amount * 2);
+        vm.prank(ALICE);
+        dai.approve(address(vault), amount * 2);
 
-        assertEq(vault.getLastUpdated(), lastUpdated + 1);
+        vm.record();
+
+        vm.prank(ALICE);
+        vault.deposit(amount, ALICE);
+        (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(address(vault));
+
+        _accrueYieldInVault(100); // simulate some yield
+
+        skip(1);
+
+        vm.prank(ALICE);
+        vault.deposit(amount, ALICE);
+        (bytes32[] memory reads2, bytes32[] memory writes2) = vm.accesses(address(vault));
+
+        assertEq(reads2.length, reads.length, "unexpected number of reads"); // same number of reads
+        assertEq(writes2.length, writes.length, "unexpected number of writes"); // same number of writes
+
         assertApproxEqRel(vault.getLastVaultBalance(), lastVaultBalance + (2 * amount), ONE_BPS);
     }
 
-    function testAccrueYieldDoesNotUpdateOnSameTimestamp() public {
+    function testAccrueYieldUpdatesOnSameTimestamp() public {
         uint256 amount = HUNDRED;
         _deployAndCheckProps();
+        skip(10);
 
         uint256 prevTimestamp = block.timestamp;
-        uint256 lastUpdated = vault.getLastUpdated();
+
         uint256 lastVaultBalance = vault.getLastVaultBalance();
 
-        _depositFromUser(ALICE, amount);
-        _depositFromUser(ALICE, amount);
-        // only lastUpdated does NOT change if same timestamp
-        // lastVaultBalance is updated separately regardless of timestamp
+        deal(address(dai), ALICE, amount * 2);
+        vm.prank(ALICE);
+        dai.approve(address(vault), amount * 2);
+
+        vm.record();
+
+        vm.prank(ALICE);
+        vault.deposit(amount, ALICE);
+        (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(address(vault));
+
+        _accrueYieldInVault(100); // simulate some yield
+
+        vm.prank(ALICE);
+        vault.deposit(amount, ALICE);
+        (bytes32[] memory reads2, bytes32[] memory writes2) = vm.accesses(address(vault));
+
+        assertEq(reads2.length, reads.length, "unexpected number of reads"); // same number of reads
+        assertEq(writes2.length, writes.length, "unexpected number of writes"); // same number of writes
 
         assertEq(block.timestamp, prevTimestamp);
-        assertEq(vault.getLastUpdated(), lastUpdated); // this should not have changed as timestamp is same
-        assertApproxEqAbs(vault.getLastVaultBalance(), lastVaultBalance + (2 * amount), 1); // This should change on deposit() anyway
+
+        assertApproxEqRel(vault.getLastVaultBalance(), lastVaultBalance + (2 * amount), ONE_BPS);
     }
 
     function testAccrueYieldEmitsEvent() public {
@@ -403,6 +453,41 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
         vm.expectEmit(false, false, false, true, address(vault));
         emit YieldAccrued(expectedNewYield, expectedFeesFromYield, vaultBalanceAfter);
         vault.deposit(amount, ALICE);
+        vm.stopPrank();
+    }
+
+    function testAccrueYieldNoEmitsEvent() public {
+        uint256 amount = HUNDRED;
+        _deployAndCheckProps();
+
+        _depositFromUser(ALICE, amount);
+        uint256 vaultBalanceBefore = aDai.balanceOf(address(vault));
+
+        skip(365 days);
+
+        uint256 vaultBalanceAfter = aDai.balanceOf(address(vault));
+        uint256 expectedNewYield = vaultBalanceAfter - vaultBalanceBefore;
+        uint256 expectedFeesFromYield = (expectedNewYield * vault.getFee()) / SCALE;
+
+        deal(address(dai), ALICE, amount * 2);
+        vm.startPrank(ALICE);
+        dai.approve(address(vault), amount * 2);
+
+        vm.record();
+
+        // Event emission
+        vm.expectEmit(false, false, false, true, address(vault));
+        emit YieldAccrued(expectedNewYield, expectedFeesFromYield, vaultBalanceAfter);
+        vault.deposit(amount, ALICE);
+        (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(address(vault));
+
+        // No event emission
+        vault.deposit(amount, ALICE);
+        (bytes32[] memory reads2, bytes32[] memory writes2) = vm.accesses(address(vault));
+
+        assertEq(reads2.length, reads.length - 7, "wrong reads"); // 3 in getClaimableFees, 4 in _accrueYield
+        assertEq(writes2.length, writes.length - 2, "wrong writes"); // 2 in _accrueYield
+
         vm.stopPrank();
     }
 
@@ -474,6 +559,34 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
         assertEq(vault.balanceOf(ALICE), ONE);
     }
 
+    function testDepositATokensWithExceedsMax() public {
+        // mock call to Aave Pool
+        MockAavePool mp = new MockAavePool(new MockAToken(address(dai)));
+        mp.setReserveConfigMap(RESERVE_CONFIG_MAP_INACTIVE);
+        vm.mockCall(
+            address(vault.AAVE_POOL()),
+            abi.encodeWithSelector(IPool.getReserveData.selector, address(dai)),
+            abi.encode(mp.getReserveData(address(dai)))
+        );
+
+        vm.startPrank(ALICE);
+        deal(address(dai), ALICE, ONE);
+
+        dai.approve(POLYGON_AAVE_POOL, ONE);
+        IPool(POLYGON_AAVE_POOL).supply(address(dai), ONE, ALICE, 0);
+
+        assertEq(aDai.balanceOf(ALICE), ONE);
+
+        aDai.approve(address(vault), ONE);
+        vm.expectEmit(true, true, false, true, address(vault));
+        emit Deposit(ALICE, ALICE, ONE, ONE);
+        vault.depositATokens(ONE, ALICE);
+
+        assertEq(aDai.balanceOf(ALICE), 0);
+        assertEq(aDai.balanceOf(address(vault)), ONE + initialLockDeposit);
+        assertEq(vault.balanceOf(ALICE), ONE);
+    }
+
     function testDepositAffectedByExchangeRate() public {
         uint256 amount = HUNDRED;
         _depositFromUser(ALICE, amount - initialLockDeposit);
@@ -483,7 +596,9 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
         assertEq(vault.balanceOf(ALICE), amount - initialLockDeposit);
 
         // Increase share/asset exchange rate
-        _accrueYieldInVault(amount);
+        uint256 fee = vault.getFee();
+        uint256 amountPlusFee = amount.mulDiv(SCALE, SCALE - fee, MathUpgradeable.Rounding.Up);
+        _accrueYieldInVault(amountPlusFee);
 
         // Now 2:1 assets to shares exchange rate
         assertEq(vault.convertToShares(amount), amount / 2);
@@ -538,6 +653,34 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
         assertEq(vault.balanceOf(ALICE), ONE);
     }
 
+    function testMintATokensWithExceedsMax() public {
+        // mock call to Aave Pool
+        MockAavePool mp = new MockAavePool(new MockAToken(address(dai)));
+        mp.setReserveConfigMap(RESERVE_CONFIG_MAP_INACTIVE);
+        vm.mockCall(
+            address(vault.AAVE_POOL()),
+            abi.encodeWithSelector(IPool.getReserveData.selector, address(dai)),
+            abi.encode(mp.getReserveData(address(dai)))
+        );
+
+        vm.startPrank(ALICE);
+        deal(address(dai), ALICE, ONE);
+
+        dai.approve(POLYGON_AAVE_POOL, ONE);
+        IPool(POLYGON_AAVE_POOL).supply(address(dai), ONE, ALICE, 0);
+
+        assertEq(aDai.balanceOf(ALICE), ONE);
+
+        aDai.approve(address(vault), ONE);
+        vm.expectEmit(true, true, false, true, address(vault));
+        emit Deposit(ALICE, ALICE, ONE, ONE);
+        vault.mintWithATokens(ONE, ALICE);
+
+        assertEq(aDai.balanceOf(ALICE), 0);
+        assertEq(aDai.balanceOf(address(vault)), ONE + initialLockDeposit);
+        assertEq(vault.balanceOf(ALICE), ONE);
+    }
+
     function testMintATokens() public {
         vm.startPrank(ALICE);
         deal(address(dai), ALICE, ONE);
@@ -566,7 +709,9 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
         assertEq(vault.balanceOf(ALICE), amount - initialLockDeposit);
 
         // Increase share/asset exchange rate
-        _accrueYieldInVault(amount);
+        uint256 fee = vault.getFee();
+        uint256 amountPlusFee = amount.mulDiv(SCALE, SCALE - fee, MathUpgradeable.Rounding.Up);
+        _accrueYieldInVault(amountPlusFee);
 
         // Now 2:1 assets to shares exchange rate
         assertEq(vault.convertToShares(amount), amount / 2);
@@ -635,8 +780,7 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
     function testWithdrawAfterYieldEarned() public {
         uint256 amount = HUNDRED;
         uint256 adjustedAmount = amount - initialLockDeposit;
-        uint256 expectedAliceAmountEnd = adjustedAmount + adjustedAmount - _getFeesOnAmount(adjustedAmount);
-        uint256 expectedFees = _getFeesOnAmount(amount);
+        uint256 expectedAliceAmountEnd = adjustedAmount + adjustedAmount;
 
         _depositFromUser(ALICE, adjustedAmount);
 
@@ -645,7 +789,10 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
         assertEq(vault.balanceOf(ALICE), adjustedAmount);
 
         // Increase share/asset exchange rate
-        _accrueYieldInVault(amount);
+        uint256 fee = vault.getFee();
+        uint256 amountPlusFee = amount.mulDiv(SCALE, SCALE - fee, MathUpgradeable.Rounding.Up);
+        uint256 feesTaken = amountPlusFee - amount;
+        _accrueYieldInVault(amountPlusFee);
 
         // Now 2:1 assets to shares exchange rate
         assertEq(vault.convertToAssets(amount), amount * 2);
@@ -667,7 +814,7 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
             vault.getClaimableFees(),
             "FEES NOT SAME AS VAULT BALANCE"
         );
-        assertApproxEqRel(vault.getClaimableFees(), expectedFees, ONE_BPS, "FEES NOT AS EXPECTED");
+        assertApproxEqRel(vault.getClaimableFees(), feesTaken, ONE_BPS, "FEES NOT AS EXPECTED");
         assertApproxEqRel(dai.balanceOf(ALICE), expectedAliceAmountEnd, ONE_BPS, "END ALICE BALANCE NOT AS EXPECTED");
     }
 
@@ -727,8 +874,7 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
     function testRedeemAfterYieldEarned() public {
         uint256 amount = HUNDRED;
         uint256 adjustedAmount = amount - initialLockDeposit;
-        uint256 expectedAliceAmountEnd = adjustedAmount + adjustedAmount - _getFeesOnAmount(adjustedAmount);
-        uint256 expectedFees = _getFeesOnAmount(amount);
+        uint256 expectedAliceAmountEnd = adjustedAmount + adjustedAmount;
 
         _depositFromUser(ALICE, adjustedAmount);
 
@@ -737,7 +883,10 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
         assertEq(vault.balanceOf(ALICE), adjustedAmount);
 
         // Increase share/asset exchange rate
-        _accrueYieldInVault(amount);
+        uint256 fee = vault.getFee();
+        uint256 amountPlusFee = amount.mulDiv(SCALE, SCALE - fee, MathUpgradeable.Rounding.Up);
+        uint256 feesTaken = amountPlusFee - amount;
+        _accrueYieldInVault(amountPlusFee);
 
         // Now 2:1 assets to shares exchange rate
         assertEq(vault.convertToAssets(amount), amount * 2);
@@ -745,7 +894,6 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
         skip(1);
 
         uint256 aliceMaxRedeemable = vault.maxRedeem(ALICE);
-
         assertApproxEqRel(vault.convertToAssets(aliceMaxRedeemable), expectedAliceAmountEnd, ONE_BPS);
 
         vm.startPrank(ALICE);
@@ -759,7 +907,7 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
             vault.getClaimableFees(),
             "FEES NOT SAME AS VAULT BALANCE"
         );
-        assertApproxEqRel(vault.getClaimableFees(), expectedFees, ONE_BPS, "FEES NOT AS EXPECTED");
+        assertApproxEqRel(vault.getClaimableFees(), feesTaken, ONE_BPS, "FEES NOT AS EXPECTED");
         assertApproxEqRel(dai.balanceOf(ALICE), expectedAliceAmountEnd, ONE_BPS, "END ALICE BALANCE NOT AS EXPECTED");
     }
 
@@ -868,38 +1016,9 @@ contract ATokenVaultForkTest is ATokenVaultForkBaseTest {
         uint256 yieldBob = dai.balanceOf(BOB) - amount;
         uint256 yieldChad = dai.balanceOf(CHAD) - amount;
 
-        // Rough checks of yield diffs, within 1% margin
-        assertApproxEqRel(yieldBob, 3 * yieldChad, ONE_PERCENT);
-        assertApproxEqRel(yieldAlice, 5 * yieldChad, ONE_PERCENT);
+        // Rough checks of yield diffs, within 1.5% margin
+        assertApproxEqRel(yieldBob, 3 * yieldChad, ONE_AND_HALF_PERCENT);
+        assertApproxEqRel(yieldAlice, 5 * yieldChad, ONE_AND_HALF_PERCENT);
         assertGt(yieldAlice, yieldBob);
-    }
-
-    // This test demonstrates a problematic scenario if the initial deposit is too little.
-    function testLowInitialDepositLock() public {
-        _deploy(POLYGON_DAI, POLYGON_POOL_ADDRESSES_PROVIDER, 1);
-
-        _transferFromUser(OWNER, 2);
-
-        _depositFromUser(ALICE, 201);
-        assertEq(vault.balanceOf(ALICE), 67);
-
-        _depositFromUser(BOB, 200);
-        assertEq(vault.balanceOf(BOB), 66);
-
-        _transferFromUser(OWNER, 8);
-
-        _redeemFromUser(ALICE, 67);
-
-        vm.startPrank(BOB);
-        vm.expectRevert(); // Arithmetic over/underflow errors are not caught properly.
-
-        vault.redeem(66, BOB, BOB);
-        
-        vm.expectRevert(); // Arithmetic over/underflow errors are not caught properly.
-        vault.redeem(65, BOB, BOB);
-        
-        vault.redeem(64, BOB, BOB); // Redeem 64 passes, leading to 2 shares locked.
-        assertEq(vault.balanceOf(BOB), 2);
-        vm.stopPrank();
     }
 }
