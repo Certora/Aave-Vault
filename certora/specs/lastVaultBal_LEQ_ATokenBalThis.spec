@@ -91,11 +91,10 @@ rule lastVaultBalance_LEQ_ATokenBalThis(env e, method f) filtered {f ->
     //        );
     
 
-    //    require (getLastVaultBalance() <= _AToken.balanceOf(currentContract));
-
-    uint256 _last_vault_bal = getLastVaultBalance();
-    uint256 _atoken_bal = _AToken.balanceOf(currentContract);
-    uint256 _the_diff = _last_vault_bal <= _atoken_bal ? 0 : _last_vault_bal-_atoken_bal;
+    require (getLastVaultBalance() <= _AToken.balanceOf(currentContract));
+    //    uint256 _last_vault_bal = getLastVaultBalance();
+    // uint256 _atoken_bal = _AToken.balanceOf(currentContract);
+    //uint256 _the_diff = _last_vault_bal <= _atoken_bal ? 0 : _last_vault_bal-_atoken_bal;
 
     if (f.selector == withdrawFees(address,uint256).selector) {
         address to; uint256 amount;
@@ -123,11 +122,13 @@ rule lastVaultBalance_LEQ_ATokenBalThis(env e, method f) filtered {f ->
         f(e,args);
     }
 
-    uint256 last_vault_bal_ = getLastVaultBalance();
-    uint256 atoken_bal_ = _AToken.balanceOf(currentContract);
-    uint256 the_diff_ = last_vault_bal_ <= atoken_bal_ ? 0 : last_vault_bal_-atoken_bal_;
+    assert (getLastVaultBalance() <= _AToken.balanceOf(currentContract));
 
-    assert (the_diff_ <= _the_diff + 1);
+    //uint256 last_vault_bal_ = getLastVaultBalance();
+    //uint256 atoken_bal_ = _AToken.balanceOf(currentContract);
+    //uint256 the_diff_ = last_vault_bal_ <= atoken_bal_ ? 0 : last_vault_bal_-atoken_bal_;
+
+    //assert (the_diff_ <= _the_diff + 1);
 }
 
 
