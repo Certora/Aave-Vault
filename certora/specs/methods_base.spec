@@ -205,6 +205,7 @@ function ay(){
 
 function maxUint132() returns uint256 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
 function maxUint128() returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
+                                              
 function maxUint120() returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
 //function maxUint64()  returns uint128 {return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;}
 //function maxUint64() returns uint128  {

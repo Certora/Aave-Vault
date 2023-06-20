@@ -100,7 +100,7 @@ function getCLMFees_LEQ_ATokenBAL_1(method f) {
     requireInvariant inv_sumAllBalance_eq_totalSupply__underline(); 
     requireInvariant inv_sumAllBalance_eq_totalSupply__atoken(); 
     requireInvariant inv_sumAllBalance_eq_totalSupply();
-    //requireInvariant lastVaultBalance_OK();
+    requireInvariant lastVaultBalance_OK();
     
     uint256 ind = _SymbolicLendingPoolL1.getLiquidityIndex();
     uint256 s_bal = _AToken.scaledBalanceOf(currentContract);
@@ -139,7 +139,11 @@ function getCLMFees_LEQ_ATokenBAL_1(method f) {
         f(e,args);
     }
 
+    require _AToken.balanceOf(currentContract) <= maxUint128();
     require totalSupply() <= maxUint128();
+    //    require Underlying.totalSupply() <= maxUint128();
+    //require _AToken.scaledTotalSupply() <= maxUint128();
+
     assert(max_possible_fees() <= _AToken.balanceOf(currentContract));
 }
 
