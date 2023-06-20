@@ -8,7 +8,7 @@ using ATokenVaultHarness as _ATokenVaultHarness;
 methods{
     function deposit(uint256, address) external returns (uint256);
     //depositATokensWithSig(uint256, address, address, (uint8,bytes32,bytes32,uint256)) returns (uint256);
-    function depositATokensWithSig(uint256, address, address, ATokenVaultHarness.EIP712Signature) external returns (uint256);
+    function depositATokensWithSig(uint256, address, address, IATokenVault.EIP712Signature) external returns (uint256);
 
     function maxDeposit(address) external returns (uint256) envfree;
     function maxRedeem(address) external returns (uint256);
@@ -90,30 +90,30 @@ definition harnessOnlyMethods(method f) returns bool =
 definition is_depositSig_method(method f) returns bool =
     (
      f.selector == sig:depositWithSig(uint256,address,address,
-                                      ATokenVaultHarness.EIP712Signature).selector ||
+                                      IATokenVault.EIP712Signature).selector ||
      f.selector == sig:depositATokensWithSig(uint256,address,address,
-                                             ATokenVaultHarness.EIP712Signature).selector
+                                             IATokenVault.EIP712Signature).selector
     );
 definition is_mintSig_method(method f) returns bool =
     (
      f.selector == sig:mintWithSig(uint256,address,address,
-                                   ATokenVaultHarness.EIP712Signature).selector ||
+                                   IATokenVault.EIP712Signature).selector ||
      f.selector == sig:mintWithATokensWithSig(uint256,address,address,
-                                              ATokenVaultHarness.EIP712Signature).selector
+                                              IATokenVault.EIP712Signature).selector
     );
 definition is_withdrawSig_method(method f) returns bool =
     (
      f.selector == sig:withdrawWithSig(uint256,address,address,
-                                       ATokenVaultHarness.EIP712Signature).selector ||
+                                       IATokenVault.EIP712Signature).selector ||
      f.selector == sig:withdrawATokensWithSig(uint256,address,address,
-                                              ATokenVaultHarness.EIP712Signature).selector
+                                              IATokenVault.EIP712Signature).selector
     );
 definition is_redeemSig_method(method f) returns bool =
     (
      f.selector == sig:redeemWithSig(uint256,address,address,
-                                     ATokenVaultHarness.EIP712Signature).selector ||
+                                     IATokenVault.EIP712Signature).selector ||
      f.selector == sig:redeemWithATokensWithSig(uint256,address,address,
-                                                ATokenVaultHarness.EIP712Signature).selector
+                                                IATokenVault.EIP712Signature).selector
     );
 
 definition is_sig_method(method f) returns bool =

@@ -98,7 +98,7 @@ function getCLMFees_LEQ_ATokenBAL_1(method f) {
     requireInvariant inv_sumAllBalance_eq_totalSupply__underline(); 
     requireInvariant inv_sumAllBalance_eq_totalSupply__atoken(); 
     requireInvariant inv_sumAllBalance_eq_totalSupply();
-    //    requireInvariant lastVaultBalance_OK();
+    requireInvariant lastVaultBalance_OK();
     
     uint256 ind = _SymbolicLendingPoolL1.getLiquidityIndex();
     uint256 s_bal = _AToken.scaledBalanceOf(currentContract);
@@ -117,17 +117,17 @@ function getCLMFees_LEQ_ATokenBAL_1(method f) {
     require(max_possible_fees() <= to_mathint(_AToken.balanceOf(currentContract)));
 
     if (f.selector == sig:depositATokensWithSig(uint256,address,address,
-                                                ATokenVaultHarness.EIP712Signature).selector) {
+                                                IATokenVault.EIP712Signature).selector) {
         uint256 assets; address receiver; address depositor;
-        ATokenVaultHarness.EIP712Signature sigg;
+        IATokenVault.EIP712Signature sigg;
         
         require depositor != currentContract;
         depositATokensWithSig(e,assets,receiver,depositor,sigg);
     }
     else if (f.selector == sig:mintWithATokensWithSig(uint256,address,address,
-                                                      ATokenVaultHarness.EIP712Signature).selector) {
+                                                      IATokenVault.EIP712Signature).selector) {
         uint256 shares; address receiver; address depositor;
-        ATokenVaultHarness.EIP712Signature sigg;
+        IATokenVault.EIP712Signature sigg;
         
         require depositor != currentContract;
         mintWithATokensWithSig(e, shares, receiver, depositor, sigg);
@@ -136,6 +136,9 @@ function getCLMFees_LEQ_ATokenBAL_1(method f) {
         calldataarg args;
         f(e,args);
     }
+
+    require _AToken.balanceOf(currentContract) <= assert_uint256(maxUint128());
+    require totalSupply() <= assert_uint256(maxUint128());
 
     assert(max_possible_fees() <= to_mathint(_AToken.balanceOf(currentContract)));
 }

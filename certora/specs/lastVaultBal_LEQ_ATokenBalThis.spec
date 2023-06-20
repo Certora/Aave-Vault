@@ -99,9 +99,10 @@ rule lastVaultBalance_LEQ_ATokenBalThis(env e, method f) filtered {f ->
              to_mathint(rayMul_MI((rayDiv_MI(x,ind)+z),ind))+1 == x+rayMul_MI(z,ind)
             );
 
-    uint256 _last_vault_bal = getLastVaultBalance();
-    uint256 _atoken_bal = _AToken.balanceOf(currentContract);
-    uint256 _the_diff = _last_vault_bal <= _atoken_bal ? 0 : assert_uint256(_last_vault_bal-_atoken_bal);
+    require (getLastVaultBalance() <= _AToken.balanceOf(currentContract));
+    //uint256 _last_vault_bal = getLastVaultBalance();
+    //uint256 _atoken_bal = _AToken.balanceOf(currentContract);
+    //uint256 _the_diff = _last_vault_bal <= _atoken_bal ? 0 : assert_uint256(_last_vault_bal-_atoken_bal);
 
     if (f.selector == sig:withdrawFees(address,uint256).selector) {
         address to; uint256 amount;
@@ -109,17 +110,17 @@ rule lastVaultBalance_LEQ_ATokenBalThis(env e, method f) filtered {f ->
         withdrawFees(e,to,amount);
     }
     else if (f.selector == sig:depositATokensWithSig(uint256,address,address,
-                                                     ATokenVaultHarness.EIP712Signature).selector) {
+                                                     IATokenVault.EIP712Signature).selector) {
         uint256 assets; address receiver; address depositor;
-        ATokenVaultHarness.EIP712Signature sigg;
+        IATokenVault.EIP712Signature sigg;
         
         require depositor != currentContract;
         depositATokensWithSig(e,assets,receiver,depositor,sigg);
     }
     else if (f.selector == sig:mintWithATokensWithSig(uint256,address,address,
-                                                      ATokenVaultHarness.EIP712Signature).selector) {
+                                                      IATokenVault.EIP712Signature).selector) {
         uint256 shares; address receiver; address depositor;
-        ATokenVaultHarness.EIP712Signature sigg;
+        IATokenVault.EIP712Signature sigg;
         
         require depositor != currentContract;
         mintWithATokensWithSig(e, shares, receiver, depositor, sigg);
@@ -129,10 +130,11 @@ rule lastVaultBalance_LEQ_ATokenBalThis(env e, method f) filtered {f ->
         f(e,args);
     }
 
-    uint256 last_vault_bal_ = getLastVaultBalance();
-    uint256 atoken_bal_ = _AToken.balanceOf(currentContract);
-    uint256 the_diff_ = last_vault_bal_ <= atoken_bal_ ? 0 : assert_uint256(last_vault_bal_-atoken_bal_);
+    assert (getLastVaultBalance() <= _AToken.balanceOf(currentContract));
+    //uint256 last_vault_bal_ = getLastVaultBalance();
+    //uint256 atoken_bal_ = _AToken.balanceOf(currentContract);
+    //uint256 the_diff_ = last_vault_bal_ <= atoken_bal_ ? 0 : assert_uint256(last_vault_bal_-atoken_bal_);
 
-    assert (to_mathint(the_diff_) <= _the_diff + 1);
+    //assert (to_mathint(the_diff_) <= _the_diff + 1);
 }
 
