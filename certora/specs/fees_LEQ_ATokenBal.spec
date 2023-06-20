@@ -139,6 +139,7 @@ function getCLMFees_LEQ_ATokenBAL_1(method f) {
         f(e,args);
     }
 
+    require totalSupply() <= maxUint128();
     assert(max_possible_fees() <= _AToken.balanceOf(currentContract));
 }
 

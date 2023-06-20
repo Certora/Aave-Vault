@@ -139,6 +139,7 @@ function positiveSupply_imply_positiveAssets_DM(method f)
         f(e,args);
     }
 
+    require _AToken.balanceOf(currentContract) <= maxUint128();
     assert(totalSupply() != 0 => totalAssets() != 0);
 }
 
