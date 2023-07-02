@@ -74,4 +74,13 @@ contract SymbolicLendingPoolL1 {
     {
         return liquidityIndex;
     }
+
+    function getLiquidityIndex()
+        external
+        view
+        virtual
+        returns (uint256)
+    {
+        return liquidityIndex;
+    }
 }
