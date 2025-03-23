@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - certora
   pull_request:
     branches:
       - main
+      - certora
 
   workflow_dispatch:
 
